@@ -30,7 +30,7 @@ class ParkingPieChart extends StatelessWidget {
             titleStyle: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Colors.black,
             ),
           ),
           PieChartSectionData(
@@ -41,7 +41,7 @@ class ParkingPieChart extends StatelessWidget {
             titleStyle: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Colors.black,
             ),
           ),
         ],

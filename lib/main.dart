@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 
 void main() => runApp(
   ChangeNotifierProvider(
-    create: (context) => AppProvider()..fetchParkingData(),
+    create: (context) => AppProvider(),
     child: const MyApp(),
   ),
 );
