@@ -1,0 +1,33 @@
+{
+    "users": [
+        {
+            "id": 1,
+            "name": "John Doe",
+            "password": "password123",
+            "email": "johndoe@example.com"
+        },
+        {
+            "id": 2,
+            "name": "Jane Smith",
+            "password": "securepass",
+            "email": "janesmith@example.com"
+        },
+        {
+            "id": 3,
+            "name": "Alice Johnson",
+            "password": "alice2024",
+            "email": "alicejohnson@example.com"
+        },
+        {
+            "id": 4,
+            "name": "Bob Brown",
+            "password": "bobsecure",
+            "email": "bobbrown@example.com"
+        }
+    ],
+    "parking": {
+        "total_spots": 50,
+        "entries": 15,
+        "exits": 20
+    }
+}
