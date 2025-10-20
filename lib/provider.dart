@@ -60,31 +60,27 @@ class AppProvider extends ChangeNotifier {
   }
 
   void addEntry() {
-    if (occupiedSpots < totalSpots) {
-      final newCars = random.nextInt(maxChange) + 1;
-      occupiedSpots += newCars;
-      entries += newCars;
+    if (occupiedSpots >= totalSpots) return; // already full
 
-      if (occupiedSpots > totalSpots) {
-        addEntry();
-      }
+    final newCars = random.nextInt(maxChange) + 1;
+    final actualCars = min(newCars, totalSpots - occupiedSpots);
 
-      updateParkingData();
-    }
+    occupiedSpots += actualCars;
+    entries += actualCars;
+
+    updateParkingData();
   }
 
   void addExit() {
-    if (occupiedSpots > 0) {
-      final leavingCars = random.nextInt(maxChange) + 1;
-      occupiedSpots -= leavingCars;
-      exits += leavingCars;
+    if (occupiedSpots <= 0) return; // already empty
 
-      if (occupiedSpots < 0) {
-        addExit();
-      }
+    final leavingCars = random.nextInt(maxChange) + 1;
+    final actualCars = min(leavingCars, occupiedSpots);
 
-      updateParkingData();
-    }
+    occupiedSpots -= actualCars;
+    exits += actualCars;
+
+    updateParkingData();
   }
 
   void simulateParkingActivity() {
