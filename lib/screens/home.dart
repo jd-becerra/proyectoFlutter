@@ -8,7 +8,8 @@ class Home extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final parkingData = context.watch<AppProvider>().parkingData;
+    final provider = context.watch<AppProvider>();
+    final parkingData = provider.parkingData;
 
     if (parkingData.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -20,40 +21,28 @@ class Home extends StatelessWidget {
     final registeredExits = parkingData['registered_exits'] ?? 0;
     final availableSpots = totalSpots - occupiedSpots;
 
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Total Spots: $totalSpots',
-            style: const TextStyle(fontSize: 18),
-          ),
-          Text(
-            'Occupied Spots: $occupiedSpots',
-            style: const TextStyle(fontSize: 18),
-          ),
-          Text(
-            'Available Spots: $availableSpots',
-            style: const TextStyle(fontSize: 18),
-          ),
-          Text(
-            'Registered Entries: $registeredEntries',
-            style: const TextStyle(fontSize: 18),
-          ),
-          Text(
-            'Registered Exits: $registeredExits',
-            style: const TextStyle(fontSize: 18),
-          ),
-          const SizedBox(height: 20),
-          Expanded(
-            child: ParkingPieChart(
-              totalSpots: totalSpots,
-              occupiedSpots: occupiedSpots,
-              availableSpots: availableSpots,
+    return Scaffold(
+      appBar: AppBar(title: const Text('Home')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Total Spots: $totalSpots', style: const TextStyle(fontSize: 18)),
+            Text('Occupied Spots: $occupiedSpots', style: const TextStyle(fontSize: 18)),
+            Text('Available Spots: $availableSpots', style: const TextStyle(fontSize: 18)),
+            Text('Registered Entries: $registeredEntries', style: const TextStyle(fontSize: 18)),
+            Text('Registered Exits: $registeredExits', style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ParkingPieChart(
+                totalSpots: totalSpots,
+                occupiedSpots: occupiedSpots,
+                availableSpots: availableSpots,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
