@@ -29,5 +29,29 @@
         "total_spots": 50,
         "entries": 15,
         "exits": 20
-    }
+    },
+    "settings": {
+        "theme": "dark",
+        "language": "en"
+    },
+    "posts": [
+        {
+            "id": 1,
+            "title": "No hay lugar",
+            "content": "Acabo de llegar y no hay lugar disponible en el estacionamiento.",
+            "image": "assets/images/img1.png"
+        },
+        {
+            "id": 2,
+            "title": "En la sección Sur todavía hay lugares.",
+            "content": "En la sección Sur todavía hay lugares disponibles.",
+            "image": "assets/images/img2.png"
+        },
+        {
+            "id": 3,
+            "title": "Lugar disponible en el nivel 2.",
+            "content": "He encontrado un lugar disponible en el nivel 2 del estacionamiento.",
+            "image": "assets/images/img3.png"
+        }
+    ]
 }

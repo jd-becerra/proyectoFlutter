@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:proyecto_flutter/models/user.dart';
 
 Future<Map<String, dynamic>> loadParkingData() async {
   final String response = await rootBundle.loadString('assets/data/data.json');
@@ -16,7 +17,8 @@ class AppProvider extends ChangeNotifier {
   int exits = 0;   // lifetime exit counter
   int availableSpots = 0;
   int occupiedSpots = 0;
-  List<dynamic> users = [];
+  List<User> users = [];
+  User ? currentUser;
 
   final Random random = Random();
   final int maxChange = 20; // max cars entering or leaving at once in simulation
@@ -29,15 +31,36 @@ class AppProvider extends ChangeNotifier {
         'registered_entries': entries,
         'registered_exits': exits,
       };
+  User ? get loggedInUser => currentUser;
 
   AppProvider() {
     initialize();
   }
 
   Future<void> initialize() async {
+    login("johndoe@example.com", "password123");
     await fetchParkingData();
     updateParkingData();
-    simulateParkingActivity();
+    simulateParkingActivity(); 
+  }
+
+  Future<void> login(String email, String password) async {
+    await fetchUsers();
+
+    try {
+      final user = users.firstWhere((user) => user.email == email && user.password == password);
+      currentUser = user;
+      notifyListeners();
+    } catch (e) {
+      currentUser = null;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchUsers() async {
+    final data = await loadParkingData();
+    users = (data["users"] as List).map((user) => User.fromJson(user)).toList();
+    notifyListeners();
   }
 
   Future<void> fetchParkingData() async {
@@ -49,7 +72,6 @@ class AppProvider extends ChangeNotifier {
     exits = parking["exits"];
     occupiedSpots = 0; // start empty
     availableSpots = totalSpots;
-    users = data["users"];
 
     notifyListeners();
   }

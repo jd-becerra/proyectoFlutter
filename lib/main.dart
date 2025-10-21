@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_flutter/provider.dart';
 import 'package:proyecto_flutter/screens/login.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
   runApp(
@@ -21,9 +22,18 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Parking App',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-        useMaterial3: true,
-      ),
+          brightness: Brightness.light,
+          primarySwatch: Colors.lightBlue,
+          primaryColor: Colors.lightBlue,
+          textTheme: TextTheme(
+            bodyLarge: GoogleFonts.quicksand(fontSize: 20.0), 
+            bodyMedium: GoogleFonts.quicksand(fontSize: 16.0),
+            bodySmall: GoogleFonts.quicksand(fontSize: 14.0)
+          )),
+      darkTheme: ThemeData(
+          brightness: Brightness.dark,
+          primarySwatch: Colors.lightBlue,
+          textTheme: TextTheme(bodyMedium: GoogleFonts.bitter(fontSize: 14.0))),
       home: Login(),
     );
   }

@@ -12,10 +12,8 @@ class ParkingPieChart extends StatelessWidget {
     required this.availableSpots,
   });
 
-  double getRadiusSize(int spots) {
-    double radius = 50 * (spots / totalSpots);
-    return radius < 30 ? 30 : radius;
-  }
+  final double radius = 50;
+  final double centerSpaceRadius = 50;
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +22,9 @@ class ParkingPieChart extends StatelessWidget {
         sections: [
           PieChartSectionData(
             value: occupiedSpots.toDouble(),
-            color: Colors.red,
+            color: Colors.grey,
             title: 'Occupied',
-            radius: totalSpots == 0 ? 0 : getRadiusSize(occupiedSpots),
+            radius: radius,
             titleStyle: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -35,9 +33,10 @@ class ParkingPieChart extends StatelessWidget {
           ),
           PieChartSectionData(
             value: availableSpots.toDouble(),
-            color: Colors.green,
+            color: Colors.lightBlue,
+            borderSide: BorderSide(style: BorderStyle.solid, color: Colors.grey, width: 6),
             title: 'Available',
-            radius: totalSpots == 0 ? 0 : getRadiusSize(availableSpots),
+            radius: radius, 
             titleStyle: const TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
@@ -45,8 +44,8 @@ class ParkingPieChart extends StatelessWidget {
             ),
           ),
         ],
-        sectionsSpace: 2,
-        centerSpaceRadius: 40,
+        sectionsSpace: 0,
+        centerSpaceRadius: centerSpaceRadius,
       ),
     );
   }
