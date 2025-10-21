@@ -10,7 +10,7 @@ class AppTitle extends StatelessWidget {
       width: double.infinity,
       child: Container(
         width: double.infinity,
-        color: Theme.of(context).colorScheme.primaryContainer,
+        color: Colors.cyan,
         padding: const EdgeInsets.only(top: 24.0, right: 8.0, left: 8.0, bottom: 8.0),
         child: Text(
           text,

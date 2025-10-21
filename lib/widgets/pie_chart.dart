@@ -23,7 +23,7 @@ class ParkingPieChart extends StatelessWidget {
           PieChartSectionData(
             value: occupiedSpots.toDouble(),
             color: Colors.grey,
-            title: 'Occupied',
+            title: '${(occupiedSpots / totalSpots * 100).toStringAsFixed(1)}%',
             radius: radius,
             titleStyle: const TextStyle(
               fontSize: 14,
@@ -33,9 +33,9 @@ class ParkingPieChart extends StatelessWidget {
           ),
           PieChartSectionData(
             value: availableSpots.toDouble(),
-            color: Colors.lightBlue,
+            color: Colors.cyan,
             borderSide: BorderSide(style: BorderStyle.solid, color: Colors.grey, width: 6),
-            title: 'Available',
+            title: '${(availableSpots / totalSpots * 100).toStringAsFixed(1)}%',
             radius: radius, 
             titleStyle: const TextStyle(
               fontSize: 14,

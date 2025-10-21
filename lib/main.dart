@@ -23,8 +23,8 @@ class MyApp extends StatelessWidget {
       title: 'Parking App',
       theme: ThemeData(
           brightness: Brightness.light,
-          primarySwatch: Colors.lightBlue,
-          primaryColor: Colors.lightBlue,
+          primarySwatch: Colors.cyan,
+          primaryColor: Colors.cyan,
           textTheme: TextTheme(
             bodyLarge: GoogleFonts.quicksand(fontSize: 20.0), 
             bodyMedium: GoogleFonts.quicksand(fontSize: 16.0),
@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
           )),
       darkTheme: ThemeData(
           brightness: Brightness.dark,
-          primarySwatch: Colors.lightBlue,
+          primarySwatch: Colors.cyan,
           textTheme: TextTheme(bodyMedium: GoogleFonts.bitter(fontSize: 14.0))),
       home: Login(),
     );
