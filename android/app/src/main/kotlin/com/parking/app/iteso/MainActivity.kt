@@ -1,4 +1,4 @@
-package com.example.proyecto_flutter
+package com.parking.app.iteso
 
 import io.flutter.embedding.android.FlutterActivity
 
