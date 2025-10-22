@@ -161,6 +161,11 @@ class AppProvider extends ChangeNotifier {
     });
   }
 
+  void logout() {
+    currentUser = null;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _simulationTimer?.cancel();
