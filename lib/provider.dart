@@ -26,7 +26,6 @@ class AppProvider extends ChangeNotifier {
   final int maxChange = 20; // max cars entering or leaving at once in simulation
   Timer? _simulationTimer;
 
-  // ====== Tema (modo oscuro) ======
   bool _isDarkMode = false;
   bool get isDarkMode => _isDarkMode;
   void toggleTheme() {

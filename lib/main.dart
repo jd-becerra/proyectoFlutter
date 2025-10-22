@@ -18,23 +18,39 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final appProvider = Provider.of<AppProvider>(context);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Parking App',
-      theme: ThemeData(
-          brightness: Brightness.light,
 
-          colorSchemeSeed: Colors.cyan,
-          textTheme: TextTheme(
-            bodyLarge: GoogleFonts.quicksand(fontSize: 20.0), 
-            bodyMedium: GoogleFonts.quicksand(fontSize: 16.0),
-            bodySmall: GoogleFonts.quicksand(fontSize: 14.0)
-          )),
+      // 🔹 ADD THIS LINE
+      themeMode: appProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+
+      theme: ThemeData(
+        brightness: Brightness.light,
+        colorSchemeSeed: Colors.cyan,
+        scaffoldBackgroundColor: Colors.grey[100],
+        textTheme: TextTheme(
+          bodyLarge: GoogleFonts.quicksand(fontSize: 20.0),
+          bodyMedium: GoogleFonts.quicksand(fontSize: 16.0),
+          bodySmall: GoogleFonts.quicksand(fontSize: 14.0),
+        ),
+      ),
+
       darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.cyan,
           brightness: Brightness.dark,
-          colorSchemeSeed: Colors.blueGrey,
-          textTheme: TextTheme(bodyMedium: GoogleFonts.bitter(fontSize: 14.0))),
-      home: Login(),
+        ),
+        scaffoldBackgroundColor: Colors.black,
+        textTheme: TextTheme(
+          bodyMedium: GoogleFonts.bitter(fontSize: 14.0),
+        ),
+      ),
+
+      home: const Login(),
     );
   }
 }
+
