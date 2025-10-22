@@ -95,10 +95,7 @@ class _ProfileState extends State<Profile> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 40,
-        flexibleSpace: const AppTitle(text: 'Perfil de Usuario'),
-      ),
+      appBar: AppTitle(text: 'Perfil de Usuario'),
       body: user != null
           ? Column(
               children: [

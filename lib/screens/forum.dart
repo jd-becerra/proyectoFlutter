@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:proyecto_flutter/widgets/title.dart';
 import '../provider.dart';
 import '../models/post.dart';
 import '../widgets/pending_alert.dart';
@@ -27,19 +28,7 @@ class _ForumState extends State<Forum> {
     final fmt = DateFormat('dd/MM/yyyy HH:mm');
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Comunidad'),
-        actions: [
-          IconButton(
-            tooltip: 'Publicar',
-            icon: const Icon(Icons.edit),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const PublishScreen()),
-            ),
-          ),
-        ],
-      ),
+      appBar: AppTitle(text: 'Foro de Publicaciones'),
       body: posts.isEmpty
           ? const Center(child: Text('Aún no hay publicaciones'))
           : ListView.separated(
@@ -48,6 +37,13 @@ class _ForumState extends State<Forum> {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (_, i) => _PostCard(post: posts[i], fmt: fmt),
             ),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.edit),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PublishScreen()),
+            ),
+          ),
     );
   }
 }

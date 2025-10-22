@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:proyecto_flutter/widgets/title.dart';
 import '../provider.dart';
 import '../models/post.dart';
 import '../widgets/pending_alert.dart';
@@ -61,7 +62,7 @@ class _PublishScreenState extends State<PublishScreen> {
     final text = Theme.of(context).textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Añade una publicación')),
+      appBar: AppTitle(text: 'Publicar Comentario'),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(

@@ -34,6 +34,17 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void updateUser(User user) {
+    final index = users.indexWhere((u) => u.id == user.id);
+    if (index != -1) {
+      users[index] = user;
+      if (currentUser?.id == user.id) {
+        currentUser = user;
+      }
+      notifyListeners();
+    }
+  }
+
   // ====== Foro (posts) ======
   final List<Post> _posts = [];
   List<Post> get posts => List.unmodifiable(_posts);

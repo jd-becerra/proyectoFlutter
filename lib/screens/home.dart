@@ -22,10 +22,7 @@ class Home extends StatelessWidget {
     final availableSpots = totalSpots - occupiedSpots;
 
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 40,
-        flexibleSpace: const AppTitle(text: 'Información del Estacionamiento'),
-      ),
+      appBar: AppTitle(text: 'Estado del Estacionamiento'),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
