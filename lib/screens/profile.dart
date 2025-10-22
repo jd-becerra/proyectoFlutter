@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:proyecto_flutter/provider.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_flutter/widgets/title.dart';
+import 'package:proyecto_flutter/screens/login.dart';
 
 class Profile extends StatefulWidget {
   @override
@@ -63,6 +64,36 @@ class _ProfileState extends State<Profile> {
       _emailController.text = user.email;
     }
 
+    void _logout() {
+      appProvider.logout();
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+
+    void _showLogoutMsg() {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Cerrar Sesión'),
+          content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _logout();
+                Navigator.of(
+                  ctx,
+                ).pushReplacement(MaterialPageRoute(builder: (_) => Login()));
+              },
+              child: const Text('Cerrar Sesión'),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 40,
@@ -84,10 +115,25 @@ class _ProfileState extends State<Profile> {
                 // The rest of your content
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.only(top: 0, bottom: 0, left: 16.0, right: 16.0),
                     child: Column(
                       children: [
-                        const SizedBox(height: 24),
+
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: () {
+                                _showLogoutMsg();
+                              },
+                              child: const Text(
+                                'Cerrar Sesión',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
                         TextField(
                           controller: _nameController,
                           readOnly: _readOnly,
