@@ -1,0 +1,17 @@
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg" style="vector-effect: non-scaling-stroke;">
+ <g id="Layer_1">
+  <title>Layer 1</title>
+  <path id="svg_25" d="m194.64247,96.4237l227.00002,-36.39999l0,181.99998l-227.00002,0l0,-145.59998z" stroke-width="0" stroke="#000" fill="#ffff00"/>
+  <path id="svg_13" d="m411.8825,240.05871l-230,0l230,0z" stroke-width="0" stroke="#000" fill="#ffff00"/>
+  <path transform="matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0)" id="svg_14" d="m231.34249,161.5263l35,-0.2l0,1l-35,0l0,-0.8z" stroke-width="0" stroke="#000" fill="#ffff00"/>
+  <path transform="matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0)" id="svg_15" d="m247.26251,176.63323l12.99999,-0.15452l0,0.77259l-12.99999,0l0,-0.61807z" stroke-width="0" stroke="#000" fill="#ffff00"/>
+  <rect id="svg_17" height="313" width="149" y="115" x="27.5" stroke-width="0" stroke="#000" fill="#00bf00"/>
+  <rect transform="matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0)" id="svg_18" height="102" width="267" y="446" x="100.5" stroke-width="0" stroke="#000" fill="#0000bf"/>
+  <path transform="matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0)" id="svg_19" d="m822.5,253l-629.5,0l-1,162l0,16l190,0l4,171l443,3l-6.5,-352z" opacity="NaN" stroke-width="0" stroke="#000" fill="#666666"/>
+  <path transform="matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0)" id="svg_20" d="m785.36248,97.8737l-356.00002,-35.79999l0,179l356.00002,0l0,-143.2z" stroke-width="0" stroke="#000" fill="#ff0000"/>
+  <text xml:space="preserve" text-anchor="start" font-family="Noto Sans JP" font-size="24" id="svg_21" y="172" x="272.5" stroke-width="0" stroke="#000" fill="#000000">20%</text>
+  <text transform="matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0) matrix(1, 0, 0, 1, 0, 0)" xml:space="preserve" text-anchor="start" font-family="Noto Sans JP" font-size="24" id="svg_22" y="168" x="581.5" stroke-width="0" stroke="#000" fill="#000000">10%</text>
+  <text xml:space="preserve" text-anchor="start" font-family="Noto Sans JP" font-size="24" id="svg_23" y="291" x="74.5" stroke-width="0" stroke="#000" fill="#000000">30%</text>
+  <text xml:space="preserve" text-anchor="start" font-family="Noto Sans JP" font-size="24" id="svg_24" y="508" x="218.5" stroke-width="0" stroke="#000" fill="#ffffff">40%</text>
+ </g>
+</svg>
