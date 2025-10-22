@@ -1,9 +1,11 @@
+import 'models/post.dart';
 import 'dart:convert';
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proyecto_flutter/models/user.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 Future<Map<String, dynamic>> loadParkingData() async {
   final String response = await rootBundle.loadString('assets/data/data.json');
@@ -18,12 +20,43 @@ class AppProvider extends ChangeNotifier {
   int availableSpots = 0;
   int occupiedSpots = 0;
   List<User> users = [];
-  User ? currentUser;
+  User? currentUser;
 
   final Random random = Random();
   final int maxChange = 20; // max cars entering or leaving at once in simulation
   Timer? _simulationTimer;
 
+  // ====== Tema (modo oscuro) ======
+  bool _isDarkMode = false;
+  bool get isDarkMode => _isDarkMode;
+  void toggleTheme() {
+    _isDarkMode = !_isDarkMode;
+    notifyListeners();
+  }
+
+  // ====== Foro (posts) ======
+  final List<Post> _posts = [];
+  List<Post> get posts => List.unmodifiable(_posts);
+
+  Future<void> fetchPosts() async {
+    try {
+      final data = await loadParkingData();
+      final rawPosts = (data['posts'] as List?) ?? [];
+      _posts
+        ..clear()
+        ..addAll(rawPosts.map((e) => Post.fromJson(e as Map<String, dynamic>)));
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error al cargar posts: $e');
+    }
+  }
+
+  void addPost(Post p) {
+    _posts.insert(0, p);
+    notifyListeners();
+  }
+
+  // ====== Datos de estacionamiento ======
   Map<String, int> get parkingData => {
         'total_spots': totalSpots,
         'occupied_spots': occupiedSpots,
@@ -31,7 +64,7 @@ class AppProvider extends ChangeNotifier {
         'registered_entries': entries,
         'registered_exits': exits,
       };
-  User ? get loggedInUser => currentUser;
+  User? get loggedInUser => currentUser;
 
   AppProvider() {
     initialize();
@@ -40,15 +73,24 @@ class AppProvider extends ChangeNotifier {
   Future<void> initialize() async {
     login("johndoe@example.com", "password123");
     await fetchParkingData();
+
+    // Carga configuración inicial (modo oscuro + posts)
+    final data = await loadParkingData();
+    _isDarkMode =
+        (data['settings']?['theme']?.toString().toLowerCase() == 'dark');
+    await fetchPosts();
+
     updateParkingData();
-    simulateParkingActivity(); 
+    simulateParkingActivity();
   }
 
+  // ====== Usuarios ======
   Future<void> login(String email, String password) async {
     await fetchUsers();
 
     try {
-      final user = users.firstWhere((user) => user.email == email && user.password == password);
+      final user =
+          users.firstWhere((user) => user.email == email && user.password == password);
       currentUser = user;
       notifyListeners();
     } catch (e) {
@@ -63,6 +105,7 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ====== Estacionamiento ======
   Future<void> fetchParkingData() async {
     final data = await loadParkingData();
 
