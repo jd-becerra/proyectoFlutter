@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:proyecto_flutter/provider.dart';
-import 'package:proyecto_flutter/models/user.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_flutter/widgets/title.dart';
 
