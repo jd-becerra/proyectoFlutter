@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:proyecto_flutter/provider.dart';
 import 'package:proyecto_flutter/widgets/pie_chart.dart';
 import 'package:proyecto_flutter/widgets/title.dart';
+import 'package:proyecto_flutter/widgets/parking_graph.dart';
 
 class Home extends StatelessWidget {
   const Home({super.key});
@@ -27,7 +28,7 @@ class Home extends StatelessWidget {
         toolbarHeight: 40,
         flexibleSpace: const AppTitle(text: 'Información del Estacionamiento'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -36,6 +37,12 @@ class Home extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Table(
+                  border: TableBorder(
+                    horizontalInside: BorderSide(
+                      width: 1,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
                   columnWidths: const {
                     0: FlexColumnWidth(2),
                     1: FlexColumnWidth(1),
@@ -46,6 +53,7 @@ class Home extends StatelessWidget {
                         Text('Total de lugares:', textAlign: TextAlign.left),
                         Text('$totalSpots', textAlign: TextAlign.right),
                       ],
+
                     ),
                     TableRow(
                       children: [
@@ -151,6 +159,22 @@ class Home extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 20),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Text(
+                      'Distribución del Estacionamiento',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                    const SizedBox(height: 16),
+                    const ParkingGraph(),
+                  ],
+                ),
+              ),
+            )
           ],
         ),
       ),
