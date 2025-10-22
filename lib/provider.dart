@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:proyecto_flutter/models/user.dart';
 
+/// Carga los datos desde el archivo JSON en assets/data/data.json
 Future<Map<String, dynamic>> loadParkingData() async {
   final String response = await rootBundle.loadString('assets/data/data.json');
   final data = json.decode(response);
@@ -12,43 +13,62 @@ Future<Map<String, dynamic>> loadParkingData() async {
 }
 
 class AppProvider extends ChangeNotifier {
+  // 🔹 Variables del sistema de estacionamiento
   int totalSpots = 0;
   int entries = 0; // lifetime entry counter
-  int exits = 0;   // lifetime exit counter
+  int exits = 0; // lifetime exit counter
   int availableSpots = 0;
   int occupiedSpots = 0;
-  List<User> users = [];
-  User ? currentUser;
 
+  // 🔹 Manejo de usuarios
+  List<User> users = [];
+  User? currentUser;
+
+  // 🔹 Variables del simulador
   final Random random = Random();
-  final int maxChange = 20; // max cars entering or leaving at once in simulation
+  final int maxChange =
+      20; // max cars entering or leaving at once in simulation
   Timer? _simulationTimer;
 
-  Map<String, int> get parkingData => {
-        'total_spots': totalSpots,
-        'occupied_spots': occupiedSpots,
-        'available_spots': availableSpots,
-        'registered_entries': entries,
-        'registered_exits': exits,
-      };
-  User ? get loggedInUser => currentUser;
+  // 🔹 Tema (modo claro/oscuro)
+  bool _isDarkMode = false;
+  bool get isDarkMode => _isDarkMode;
 
+  // 🔹 Getters de datos del estacionamiento
+  Map<String, int> get parkingData => {
+    'total_spots': totalSpots,
+    'occupied_spots': occupiedSpots,
+    'available_spots': availableSpots,
+    'registered_entries': entries,
+    'registered_exits': exits,
+  };
+
+  User? get loggedInUser => currentUser;
+
+  // 🔹 Constructor
   AppProvider() {
     initialize();
   }
 
+  // --------------------- INICIALIZACIÓN ---------------------
+
   Future<void> initialize() async {
+    // Simulamos un login inicial y empezamos la simulación
     login("johndoe@example.com", "password123");
     await fetchParkingData();
     updateParkingData();
-    simulateParkingActivity(); 
+    simulateParkingActivity();
   }
+
+  // --------------------- USUARIOS ---------------------
 
   Future<void> login(String email, String password) async {
     await fetchUsers();
 
     try {
-      final user = users.firstWhere((user) => user.email == email && user.password == password);
+      final user = users.firstWhere(
+        (user) => user.email == email && user.password == password,
+      );
       currentUser = user;
       notifyListeners();
     } catch (e) {
@@ -62,6 +82,8 @@ class AppProvider extends ChangeNotifier {
     users = (data["users"] as List).map((user) => User.fromJson(user)).toList();
     notifyListeners();
   }
+
+  // --------------------- ESTACIONAMIENTO ---------------------
 
   Future<void> fetchParkingData() async {
     final data = await loadParkingData();
@@ -117,6 +139,15 @@ class AppProvider extends ChangeNotifier {
       }
     });
   }
+
+  // --------------------- TEMA CLARO/OSCURO ---------------------
+
+  void toggleTheme() {
+    _isDarkMode = !_isDarkMode;
+    notifyListeners();
+  }
+
+  // --------------------- LIMPIEZA ---------------------
 
   @override
   void dispose() {

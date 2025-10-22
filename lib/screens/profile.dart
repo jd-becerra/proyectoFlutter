@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:proyecto_flutter/provider.dart';
-import 'package:proyecto_flutter/models/user.dart';
 import 'package:provider/provider.dart';
 
 class Profile extends StatelessWidget {
@@ -12,9 +11,7 @@ class Profile extends StatelessWidget {
     final user = appProvider.loggedInUser;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Profile'),
-      ),
+      appBar: AppBar(title: Text('Profile')),
       body: Center(
         child: user != null
             ? Column(
