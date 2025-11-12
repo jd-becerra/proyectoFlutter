@@ -3,6 +3,7 @@ import 'package:proyecto_flutter/provider.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_flutter/widgets/title.dart';
 import 'package:proyecto_flutter/screens/login.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class Profile extends StatefulWidget {
   @override
@@ -17,8 +18,9 @@ class _ProfileState extends State<Profile> {
   @override
   void initState() {
     super.initState();
-    final user = Provider.of<AppProvider>(context, listen: false).loggedInUser;
-    _nameController = TextEditingController(text: user?.name ?? '');
+    // Tomar user de FirebaseAuth
+    final user = FirebaseAuth.instance.currentUser;
+    _nameController = TextEditingController(text: user?.displayName ?? '');
     _emailController = TextEditingController(text: user?.email ?? '');
   }
 
@@ -64,12 +66,28 @@ class _ProfileState extends State<Profile> {
       _emailController.text = user.email;
     }
 
-    void _logout() {
+
+    void _logout(BuildContext context) async {
+      final appProvider = Provider.of<AppProvider>(context, listen: false);
+
+      // Sign out from Firebase (clears session)
+      await FirebaseAuth.instance.signOut();
+
+      // Clear local user
       appProvider.logout();
-      Navigator.of(context).popUntil((route) => route.isFirst);
+
+      // Replace current route with Login
+      if (context.mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const Login()),
+          (route) => false,
+        );
+      }
     }
 
-    void _showLogoutMsg() {
+
+      void _showLogoutMsg() {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -82,10 +100,8 @@ class _ProfileState extends State<Profile> {
             ),
             ElevatedButton(
               onPressed: () {
-                _logout();
-                Navigator.of(
-                  ctx,
-                ).pushReplacement(MaterialPageRoute(builder: (_) => Login()));
+                Navigator.of(ctx).pop();
+                _logout(context);
               },
               child: const Text('Cerrar Sesión'),
             ),

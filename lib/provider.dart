@@ -34,14 +34,8 @@ class AppProvider extends ChangeNotifier {
   }
 
   void updateUser(User user) {
-    final index = users.indexWhere((u) => u.id == user.id);
-    if (index != -1) {
-      users[index] = user;
-      if (currentUser?.id == user.id) {
-        currentUser = user;
-      }
-      notifyListeners();
-    }
+    currentUser = user;
+    notifyListeners();
   }
 
   // ====== Foro (posts) ======

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "818985157187",
+    "project_id": "proyecto-6c537",
+    "storage_bucket": "proyecto-6c537.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:818985157187:android:253fd5a1573ff2e5108af6",
+        "android_client_info": {
+          "package_name": "com.parking.app.iteso"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtlIoZQdKUbPDVZdlMKo3NH6XAYovyfVI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

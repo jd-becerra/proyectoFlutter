@@ -1,156 +1,171 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_flutter/provider.dart';
-import 'package:proyecto_flutter/screens/navigation.dart';
-import 'package:proyecto_flutter/models/user.dart';
 import 'package:proyecto_flutter/widgets/title.dart';
+import 'package:proyecto_flutter/screens/login.dart';
 
-class Register extends StatefulWidget {
-  const Register({super.key});
+class Profile extends StatelessWidget {
+  const Profile({super.key});
 
-  @override
-  State<Register> createState() => _RegisterState();
-}
-
-class _RegisterState extends State<Register> {
-  final nameController = TextEditingController();
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
-  final confirmPasswordController = TextEditingController();
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    emailController.dispose();
-    passwordController.dispose();
-    confirmPasswordController.dispose();
-    super.dispose();
-  }
-
-  void _login(AppProvider appProvider, BuildContext context) {
-    final user = User(
-      id: 1,
-      name: nameController.text,
-      email: emailController.text,
-      password: passwordController.text,
-    );
-    appProvider.updateUser(user);
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const Navigation()),
-    );
-  }
-
-  void _checkData(AppProvider appProvider, BuildContext context) {
-    if (nameController.text.isEmpty ||
-        emailController.text.isEmpty ||
-        passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor, completa todos los campos'),
-        ),
-      );
-      return;
-    }
-
-    if (passwordController.text != confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Las contraseñas no coinciden'),
-        ),
-      );
-      return;
-    }
-
-    _login(appProvider, context);
+  Future<void> _logout(BuildContext context) async {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
+    await FirebaseAuth.instance.signOut();
+    appProvider.logout();
   }
 
   @override
   Widget build(BuildContext context) {
-    final appProvider = Provider.of<AppProvider>(context);
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        final user = snapshot.data;
 
-    return Scaffold(
-      appBar: const AppTitle(text: 'Registro de Usuario'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const Icon(Icons.app_registration,
-                size: 80, color: Colors.blueAccent),
-            const SizedBox(height: 25),
+        // Si usuario es nulo, redirigir a Login
+        if (user == null) {
+          Future.microtask(() {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const Login()),
+              (route) => false,
+            );
+          });
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-            TextField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: 'Nombre completo',
-                prefixIcon: const Icon(Icons.person),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+        final nameController = TextEditingController(text: user.displayName ?? '');
+        final emailController = TextEditingController(text: user.email ?? '');
+
+        bool readOnly = true;
+
+        void toggleEditable(StateSetter setState) {
+          setState(() => readOnly = !readOnly);
+        }
+
+        Future<void> save(StateSetter setState) async {
+          await user.updateDisplayName(nameController.text.trim());
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Se han guardado los cambios.')),
+          );
+          setState(() => readOnly = true);
+        }
+
+        void showLogoutDialog() {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('Cerrar Sesión'),
+              content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(),
+                  child: const Text('Cancelar'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    Navigator.of(ctx).pop();
+                    await _logout(context);
+                  },
+                  child: const Text('Cerrar Sesión'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Scaffold(
+          appBar: const AppTitle(text: 'Perfil de Usuario'),
+          body: Column(
+            children: [
+              SizedBox(
+                width: double.infinity,
+                height: 200,
+                child: Image.asset(
+                  "assets/images/entrada.jpeg",
+                  fit: BoxFit.cover,
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-
-            TextField(
-              controller: emailController,
-              decoration: InputDecoration(
-                labelText: 'Correo electrónico',
-                prefixIcon: const Icon(Icons.email),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+              Expanded(
+                child: StatefulBuilder(
+                  builder: (context, setState) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: showLogoutDialog,
+                              child: const Text(
+                                'Cerrar Sesión',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: nameController,
+                          readOnly: readOnly,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: emailController,
+                          readOnly: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Correo electrónico',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 64),
+                        if (!readOnly)
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: () => save(setState),
+                              icon: const Icon(Icons.save),
+                              label: const Text('Guardar Cambios'),
+                            ),
+                          ),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () => toggleEditable(setState),
+                            icon: Icon(
+                              readOnly ? Icons.edit : Icons.cancel,
+                              color: readOnly
+                                  ? Theme.of(context).primaryColor
+                                  : Colors.red,
+                            ),
+                            label: Text(
+                              readOnly ? 'Editar Perfil' : 'Cancelar',
+                              style: TextStyle(
+                                color: readOnly
+                                    ? Theme.of(context).primaryColor
+                                    : Colors.red,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
-
-            TextField(
-              controller: passwordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Contraseña',
-                prefixIcon: const Icon(Icons.lock),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            TextField(
-              controller: confirmPasswordController,
-              obscureText: true,
-              decoration: InputDecoration(
-                labelText: 'Confirmar contraseña',
-                prefixIcon: const Icon(Icons.lock_outline),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 30),
-
-            ElevatedButton(
-              onPressed: () => _checkData(appProvider, context),
-              style: ElevatedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 50),
-                backgroundColor: Colors.blueAccent,
-              ),
-              child: const Text('Crear cuenta'),
-            ),
-
-            const SizedBox(height: 40),
-
-            Image.asset(
-              'assets/images/register.jpg',
-              height: 130,
-              fit: BoxFit.cover,
-              width: double.infinity,
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
