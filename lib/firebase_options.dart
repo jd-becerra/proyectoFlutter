@@ -69,6 +69,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '818985157187',
     projectId: 'proyecto-6c537',
     storageBucket: 'proyecto-6c537.firebasestorage.app',
+    iosClientId: '818985157187-fu7ur5b0u8rrf18gjinuii1sf4o61hh0.apps.googleusercontent.com',
     iosBundleId: 'com.parking.app.iteso',
   );
+
 }

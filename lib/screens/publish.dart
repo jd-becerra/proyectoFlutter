@@ -6,6 +6,11 @@ import 'package:proyecto_flutter/widgets/title.dart';
 import '../provider.dart';
 import '../models/post.dart';
 import '../widgets/pending_alert.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+
+// Firebase
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PublishScreen extends StatefulWidget {
   const PublishScreen({super.key});
@@ -39,7 +44,7 @@ class _PublishScreenState extends State<PublishScreen> {
     }
   }
 
-  void _publish() {
+  Future<void> _publish() async {
     if (!_formKey.currentState!.validate()) return;
 
     final post = Post(
@@ -54,6 +59,19 @@ class _PublishScreenState extends State<PublishScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Comentario publicado')),
     );
+
+    await FirebaseFirestore.instance.collection('posts').add({
+      'id': post.id,
+      'zone': post.area,
+      'content': post.content,
+      'image': post.image,
+      'createdAt': post.createdAt,
+    }).then(
+      (value) => print('Comentario publicado en Firestore: ' + value.id),
+    ).catchError(
+      (error) => print('Error al publicar comentario en Firestore: ' + error.toString()),
+    );
+
     Navigator.pop(context);
   }
 
@@ -69,7 +87,7 @@ class _PublishScreenState extends State<PublishScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              Text('Tu lugar de estacionamiento', style: text.titleMedium),
+              Text('Tu zona de estacionamiento actual', style: text.titleMedium),
               const SizedBox(height: 8),
               DropdownMenu<String>(
                 initialSelection: _area,
@@ -107,20 +125,26 @@ class _PublishScreenState extends State<PublishScreen> {
                   child: _picked == null
                       ? const Center(child: Icon(Icons.image, size: 40))
                       : ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            File(_picked!.path),
-                            fit: BoxFit.cover,
-                            width: double.infinity,
-                          ),
-                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        child: kIsWeb
+                            ? Image.network(
+                                _picked!.path, // web gives you a blob URL
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              )
+                            : Image.file(
+                                File(_picked!.path),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              ),
+                      ),
                 ),
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 icon: const Icon(Icons.send),
                 label: const Text('Publicar comentario'),
-                onPressed: _publish,
+                onPressed: () async => await _publish(),
               ),
             ],
           ),

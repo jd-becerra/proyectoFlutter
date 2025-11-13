@@ -9,6 +9,8 @@ import 'package:proyecto_flutter/widgets/title.dart';
 // Firebase
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
+
 
 class Login extends StatelessWidget {
   const Login({super.key});
@@ -21,9 +23,14 @@ class Login extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
+          var clientId = '818985157187-0jt2i61e6fsk49c1mm208ea60idu8j32.apps.googleusercontent.com';
           return SignInScreen(
             providers: [
-              EmailAuthProvider()
+              EmailAuthProvider(),
+              GoogleProvider(
+                clientId:
+                    clientId,
+              ),
             ],
             headerBuilder: (context, constraints, shrinkOffset) {
               return Padding(

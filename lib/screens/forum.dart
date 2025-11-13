@@ -7,6 +7,10 @@ import '../models/post.dart';
 import '../widgets/pending_alert.dart';
 import 'publish.dart';
 
+// Firebase
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Forum extends StatefulWidget {
   const Forum({super.key});
   @override

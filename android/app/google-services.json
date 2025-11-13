@@ -12,7 +12,12 @@
           "package_name": "com.parking.app.iteso"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "818985157187-0jt2i61e6fsk49c1mm208ea60idu8j32.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBtlIoZQdKUbPDVZdlMKo3NH6XAYovyfVI"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "818985157187-0jt2i61e6fsk49c1mm208ea60idu8j32.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "818985157187-fu7ur5b0u8rrf18gjinuii1sf4o61hh0.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.parking.app.iteso"
+              }
+            }
+          ]
         }
       }
     }
