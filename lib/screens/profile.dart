@@ -5,6 +5,8 @@ import 'package:proyecto_flutter/widgets/title.dart';
 import 'package:proyecto_flutter/screens/login.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import '../constants/zones.dart'; // para el dropdown de zona
+
 class Profile extends StatefulWidget {
   @override
   State<Profile> createState() => _ProfileState();
@@ -18,10 +20,9 @@ class _ProfileState extends State<Profile> {
   @override
   void initState() {
     super.initState();
-    // Tomar user de FirebaseAuth
-    final user = FirebaseAuth.instance.currentUser;
-    _nameController = TextEditingController(text: user?.displayName ?? '');
-    _emailController = TextEditingController(text: user?.email ?? '');
+    final fbUser = FirebaseAuth.instance.currentUser;
+    _nameController = TextEditingController(text: fbUser?.displayName ?? '');
+    _emailController = TextEditingController(text: fbUser?.email ?? '');
   }
 
   @override
@@ -56,27 +57,32 @@ class _ProfileState extends State<Profile> {
   @override
   Widget build(BuildContext context) {
     final appProvider = Provider.of<AppProvider>(context);
-    final user = appProvider.loggedInUser;
 
-    // Actualizar usuario cuando ya no sea nulo
-    if (user != null &&
+    // Usuario del provider (JSON) y usuario de Firebase
+    final localUser = appProvider.loggedInUser;
+    final fbUser = FirebaseAuth.instance.currentUser;
+
+    // Consideramos que hay usuario si alguno de los dos no es null
+    final hasUser = localUser != null || fbUser != null;
+
+    // Si el provider tiene usuario y los TextField están vacíos, los llenamos
+    if (localUser != null &&
         _nameController.text.isEmpty &&
         _emailController.text.isEmpty) {
-      _nameController.text = user.name;
-      _emailController.text = user.email;
+      _nameController.text = localUser.name;
+      _emailController.text = localUser.email;
     }
-
 
     void _logout(BuildContext context) async {
       final appProvider = Provider.of<AppProvider>(context, listen: false);
 
-      // Sign out from Firebase (clears session)
+      // Cerrar sesión en Firebase
       await FirebaseAuth.instance.signOut();
 
-      // Clear local user
+      // Limpiar usuario local
       appProvider.logout();
 
-      // Replace current route with Login
+      // Navegar al login
       if (context.mounted) {
         Navigator.pushAndRemoveUntil(
           context,
@@ -86,8 +92,7 @@ class _ProfileState extends State<Profile> {
       }
     }
 
-
-      void _showLogoutMsg() {
+    void _showLogoutMsg() {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
@@ -112,33 +117,41 @@ class _ProfileState extends State<Profile> {
 
     return Scaffold(
       appBar: AppTitle(text: 'Perfil de Usuario'),
-      body: user != null
-          ? Column(
+      body: !hasUser
+          ? const Center(
+              child: Text(
+                'No user logged in',
+                style: TextStyle(fontSize: 20),
+              ),
+            )
+          : Column(
               children: [
-                // Image covers full width
+                // Imagen superior
                 SizedBox(
                   width: double.infinity,
                   height: 200,
                   child: Image.asset(
                     "assets/images/entrada.jpeg",
-                    fit: BoxFit.cover, // fills width
+                    fit: BoxFit.cover,
                   ),
                 ),
 
-                // The rest of your content
+                // Contenido
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.only(top: 0, bottom: 0, left: 16.0, right: 16.0),
+                    padding: const EdgeInsets.only(
+                      top: 0,
+                      bottom: 0,
+                      left: 16.0,
+                      right: 16.0,
+                    ),
                     child: Column(
                       children: [
-
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
                             TextButton(
-                              onPressed: () {
-                                _showLogoutMsg();
-                              },
+                              onPressed: _showLogoutMsg,
                               child: const Text(
                                 'Cerrar Sesión',
                                 style: TextStyle(color: Colors.red),
@@ -173,7 +186,52 @@ class _ProfileState extends State<Profile> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 64),
+
+                        const SizedBox(height: 24),
+
+                        // --- Zona preferida ---
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Zona de estacionamiento preferida',
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        DropdownButtonFormField<String>(
+                          value: appProvider.preferredZone,
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(8.0),
+                              ),
+                            ),
+                            labelText: 'Selecciona tu zona',
+                          ),
+                          items: [
+                            for (final z in kZones)
+                              DropdownMenuItem(
+                                value: z,
+                                child: Text(z),
+                              ),
+                          ],
+                          onChanged: (v) async {
+                            if (v == null) return;
+                            await context
+                                .read<AppProvider>()
+                                .setPreferredZone(v);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Zona preferida guardada: $v',
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 32),
+
                         if (!_readOnly)
                           SizedBox(
                             width: double.infinity,
@@ -208,9 +266,6 @@ class _ProfileState extends State<Profile> {
                   ),
                 ),
               ],
-            )
-          : const Center(
-              child: Text('No user logged in', style: TextStyle(fontSize: 20)),
             ),
     );
   }

@@ -7,7 +7,7 @@ import '../models/post.dart';
 import '../widgets/pending_alert.dart';
 import 'publish.dart';
 
-// Firebase
+// Firebase (por si lo usas después)
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -46,8 +46,8 @@ class _ForumState extends State<Forum> {
         onPressed: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const PublishScreen()),
-            ),
-          ),
+        ),
+      ),
     );
   }
 }
@@ -68,19 +68,35 @@ class _PostCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text('Lugar: ${post.area}',
-                    style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                const Spacer(),
-                Text(fmt.format(post.createdAt),
-                    style: text.bodySmall?.copyWith(
-                      color: (text.bodySmall?.color ?? Colors.grey).withOpacity(0.8),
-                    )),
-              ],
+            // === Encabezado SIN Row: lugar arriba, fecha abajo ===
+            Text(
+              'Lugar: ${post.area}',
+              style: text.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+              maxLines: 2,                 // por si el nombre es MUY largo
+              overflow: TextOverflow.ellipsis,
             ),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                fmt.format(post.createdAt),
+                style: text.bodySmall?.copyWith(
+                  color: (text.bodySmall?.color ?? Colors.grey)
+                      .withOpacity(0.8),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // === Fin encabezado ===
+
             const SizedBox(height: 8),
-            Text(post.content, style: text.bodyMedium),
+            Text(
+              post.content,
+              style: text.bodyMedium,
+            ),
             const SizedBox(height: 8),
             if (post.image != null && post.image!.isNotEmpty)
               ClipRRect(
@@ -92,14 +108,20 @@ class _PostCard extends StatelessWidget {
               children: [
                 IconButton(
                   icon: const Icon(Icons.favorite_border),
-                  onPressed: () => showPendingAlert(context, 'Aquí se registrará tu “like”.'),
+                  onPressed: () => showPendingAlert(
+                    context,
+                    'Aquí se registrará tu “like”.',
+                  ),
                 ),
                 IconButton(
                   icon: const Icon(Icons.share_outlined),
-                  onPressed: () => showPendingAlert(context, 'Aquí se compartirá la publicación.'),
+                  onPressed: () => showPendingAlert(
+                    context,
+                    'Aquí se compartirá la publicación.',
+                  ),
                 ),
                 const Spacer(),
-                Badge(label: const Text('NEW')), // widget nuevo
+                const Badge(label: Text('NEW')),
               ],
             ),
           ],
@@ -115,10 +137,18 @@ class _PostImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isNetwork = path.startsWith('http://') || path.startsWith('https://');
+    final isNetwork =
+        path.startsWith('http://') || path.startsWith('https://');
     final image = isNetwork
         ? Image.network(path, fit: BoxFit.cover)
-        : Image.asset(path, fit: BoxFit.cover); // requiere que el asset exista
-    return AspectRatio(aspectRatio: 16 / 9, child: image);
+        : Image.asset(
+            path,
+            fit: BoxFit.cover,
+          ); // requiere que el asset exista
+
+    return AspectRatio(
+      aspectRatio: 16 / 9,
+      child: image,
+    );
   }
 }

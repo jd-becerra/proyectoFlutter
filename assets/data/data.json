@@ -1,57 +1,68 @@
 {
-    "users": [
-        {
-            "id": 1,
-            "name": "John Doe",
-            "password": "password123",
-            "email": "johndoe@example.com"
-        },
-        {
-            "id": 2,
-            "name": "Jane Smith",
-            "password": "securepass",
-            "email": "janesmith@example.com"
-        },
-        {
-            "id": 3,
-            "name": "Alice Johnson",
-            "password": "alice2024",
-            "email": "alicejohnson@example.com"
-        },
-        {
-            "id": 4,
-            "name": "Bob Brown",
-            "password": "bobsecure",
-            "email": "bobbrown@example.com"
-        }
-    ],
-    "parking": {
-        "total_spots": 50,
-        "entries": 15,
-        "exits": 20
+  "users": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "password": "password123",
+      "email": "johndoe@example.com",
+      "preferred_zone": "Estacionamiento externo y profesores Norte"
     },
-    "settings": {
-        "theme": "dark",
-        "language": "en"
+    {
+      "id": 2,
+      "name": "Jane Smith",
+      "password": "securepass",
+      "email": "janesmith@example.com",
+      "preferred_zone": "Estacionamiento profesores Sur"
     },
-    "posts": [
-        {
-            "id": 1,
-            "title": "No hay lugar",
-            "content": "Acabo de llegar y no hay lugar disponible en el estacionamiento.",
-            "image": "assets/images/img1.png"
-        },
-        {
-            "id": 2,
-            "title": "En la sección Sur todavía hay lugares.",
-            "content": "En la sección Sur todavía hay lugares disponibles.",
-            "image": "assets/images/img2.png"
-        },
-        {
-            "id": 3,
-            "title": "Lugar disponible en el nivel 2.",
-            "content": "He encontrado un lugar disponible en el nivel 2 del estacionamiento.",
-            "image": "assets/images/img3.png"
-        }
-    ]
+    {
+      "id": 3,
+      "name": "Alice Johnson",
+      "password": "alice2024",
+      "email": "alicejohnson@example.com",
+      "preferred_zone": "Estacionamiento controlado Poniente"
+    },
+    {
+      "id": 4,
+      "name": "Bob Brown",
+      "password": "bobsecure",
+      "email": "bobbrown@example.com",
+      "preferred_zone": "Acceso peatonal puerta Sur"
+    }
+  ],
+
+  "parking": {
+    "total_spots": 50,
+    "entries": 15,
+    "exits": 20
+  },
+
+  "settings": {
+    "theme": "dark",
+    "language": "en",
+    "preferred_zone": "Estacionamiento controlado Norte"
+  },
+
+  "posts": [
+    {
+      "id": 1,
+      "area": "Estacionamiento externo y profesores Norte",
+      "title": "No hay lugar",
+      "content": "Acabo de llegar y no hay lugar disponible en el estacionamiento.",
+      "image": "assets/images/img1.png"
+    },
+    {
+      "id": 2,
+      "area": "Estacionamiento profesores Sur",
+      "title": "En la sección Sur todavía hay lugares.",
+      "content": "En la sección Sur todavía hay lugares disponibles.",
+      "image": "assets/images/img2.png"
+    },
+    {
+      "id": 3,
+      "area": "Estacionamiento controlado Poniente",
+      "title": "Lugar disponible en el nivel 2.",
+      "content": "He encontrado un lugar disponible en el nivel 2 del estacionamiento.",
+      "image": "assets/images/img3.png"
+    }
+  ]
 }
