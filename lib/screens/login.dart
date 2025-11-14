@@ -11,7 +11,6 @@ import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 import 'package:firebase_ui_oauth_google/firebase_ui_oauth_google.dart';
 
-
 class Login extends StatelessWidget {
   const Login({super.key});
 
@@ -23,21 +22,19 @@ class Login extends StatelessWidget {
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
-          var clientId = '818985157187-0jt2i61e6fsk49c1mm208ea60idu8j32.apps.googleusercontent.com';
+          var clientId =
+              '818985157187-0jt2i61e6fsk49c1mm208ea60idu8j32.apps.googleusercontent.com';
           return SignInScreen(
             providers: [
               EmailAuthProvider(),
-              GoogleProvider(
-                clientId:
-                    clientId,
-              ),
+              GoogleProvider(clientId: clientId),
             ],
             headerBuilder: (context, constraints, shrinkOffset) {
               return Padding(
                 padding: const EdgeInsets.all(20),
                 child: AspectRatio(
                   aspectRatio: 1,
-                  child: Image.asset('assets/images/login.jpg'),
+                  child: Image.asset('assets/images/parking_header.png'),
                 ),
               );
             },
