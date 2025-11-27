@@ -24,6 +24,13 @@ class AppProvider extends ChangeNotifier {
   int occupiedSpots = 0;
   List<User> users = [];
   User? currentUser;
+  String? _preferredZone;
+
+  String? get preferredZone => _preferredZone;
+  set preferredZone(String? zone) {
+    _preferredZone = zone;
+    notifyListeners();
+  }
 
   final Random random = Random();
   final int maxChange = 20; // max cars entering or leaving at once in simulation
@@ -60,7 +67,7 @@ class AppProvider extends ChangeNotifier {
             id: data['id'],
             area: data['zone'],
             content: data['content'],
-            image: data['image_url'], // ✅ SUPABASE URL
+            image: data['image_url'],
             createdAt: (data['createdAt'] as Timestamp).toDate(),
           );
         }));

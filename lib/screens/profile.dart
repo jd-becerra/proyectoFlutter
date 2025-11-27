@@ -215,11 +215,9 @@ class _ProfileState extends State<Profile> {
                                 child: Text(z),
                               ),
                           ],
-                          onChanged: (v) async {
+                          onChanged: (v) {
                             if (v == null) return;
-                            await context
-                                .read<AppProvider>()
-                                .setPreferredZone(v);
+                            appProvider.preferredZone = v;
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
