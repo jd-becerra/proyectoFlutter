@@ -3,12 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_flutter/widgets/title.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-
 import '../provider.dart';
 import '../models/post.dart';
 import '../widgets/pending_alert.dart';
-import '../constants/zones.dart'; // <- zonas oficiales ITESO
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 // Firebase
 import 'package:firebase_core/firebase_core.dart';
@@ -26,22 +24,8 @@ class PublishScreen extends StatefulWidget {
 class _PublishScreenState extends State<PublishScreen> {
   final _formKey = GlobalKey<FormState>();
   final _contentCtrl = TextEditingController();
-
-  // se inicializa con la primera zona, pero se sincroniza con la preferida en initState
-  String _area = kZones.first;
+  String _area = 'G1';
   XFile? _picked;
-
-  @override
-  void initState() {
-    super.initState();
-    // después del primer frame tomamos la zona preferida del usuario
-    Future.microtask(() {
-      final preferred = context.read<AppProvider>().preferredZone;
-      if (mounted && kZones.contains(preferred)) {
-        setState(() => _area = preferred);
-      }
-    });
-  }
 
   @override
   void dispose() {
@@ -92,17 +76,16 @@ class _PublishScreenState extends State<PublishScreen> {
           .getPublicUrl(filePath);
     }
 
-    await FirebaseFirestore.instance.collection('posts').add({
-      'id': post.id,
-      'zone': post.area,
-      'content': post.content,
-      'image': post.image,
-      'createdAt': post.createdAt,
+    await FirebaseFirestore.instance.collection('posts').doc(postId.toString()).set({
+      'id': postId,
+      'zone': _area,
+      'content': _contentCtrl.text.trim(),
+      'image_url': imageUrl,
+      'createdAt': DateTime.now(),
     }).then(
-      (value) => print('Comentario publicado en Firestore: ' + value.id),
+      (value) => print('Comentario publicado en Firestore: ' + postId.toString()),
     ).catchError(
-      (error) =>
-          debugPrint('Error al publicar comentario en Firestore: $error'),
+      (error) => print('Error al publicar comentario en Firestore: ' + error.toString()),
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -124,18 +107,16 @@ class _PublishScreenState extends State<PublishScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              // Texto actualizado
-              Text('Tu zona de estacionamiento', style: text.titleMedium),
+              Text('Tu zona de estacionamiento actual', style: text.titleMedium),
               const SizedBox(height: 8),
               DropdownMenu<String>(
                 initialSelection: _area,
-                onSelected: (v) {
-                  if (v == null) return;
-                  setState(() => _area = v);
-                },
-                dropdownMenuEntries: [
-                  for (final z in kZones)
-                    DropdownMenuEntry<String>(value: z, label: z),
+                onSelected: (v) => setState(() => _area = v ?? 'G1'),
+                dropdownMenuEntries: const [
+                  DropdownMenuEntry(value: 'G1', label: 'G1'),
+                  DropdownMenuEntry(value: 'G2', label: 'G2'),
+                  DropdownMenuEntry(value: 'G3', label: 'G3'),
+                  DropdownMenuEntry(value: 'G4', label: 'G4'),
                 ],
               ),
               const SizedBox(height: 16),
@@ -145,12 +126,12 @@ class _PublishScreenState extends State<PublishScreen> {
                 controller: _contentCtrl,
                 maxLines: 5,
                 decoration: const InputDecoration(
-                  hintText:
-                      'Ejemplo: Hoy está muy lleno en estacionamiento controlado Norte…',
+                  hintText: 'Hoy está muy lleno en la zona G1…',
                   border: OutlineInputBorder(),
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Escribe un comentario' : null,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Escribe un comentario'
+                    : null,
               ),
               const SizedBox(height: 16),
               GestureDetector(
@@ -159,33 +140,31 @@ class _PublishScreenState extends State<PublishScreen> {
                   height: 140,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
+                    border: Border.all(color: Theme.of(context).colorScheme.outline),
                   ),
                   child: _picked == null
                       ? const Center(child: Icon(Icons.image, size: 40))
                       : ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: kIsWeb
-                              ? Image.network(
-                                  _picked!.path, // en web es un blob URL
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                )
-                              : Image.file(
-                                  File(_picked!.path),
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                ),
-                        ),
+                        borderRadius: BorderRadius.circular(12),
+                        child: kIsWeb
+                            ? Image.network(
+                                _picked!.path, // web gives you a blob URL
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              )
+                            : Image.file(
+                                File(_picked!.path),
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                              ),
+                      ),
                 ),
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 icon: const Icon(Icons.send),
                 label: const Text('Publicar comentario'),
-                onPressed: () async => _publish(),
+                onPressed: () async => await _publish(),
               ),
             ],
           ),

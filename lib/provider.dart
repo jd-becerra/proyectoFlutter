@@ -1,40 +1,34 @@
-import 'dart:async';
-import 'dart:convert';
-import 'dart:math';
-
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:shared_preferences/shared_preferences.dart';
-
-import 'constants/zones.dart';
 import 'models/post.dart';
-import 'models/user.dart';
+import 'dart:convert';
+import 'dart:async';
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:proyecto_flutter/models/user.dart';
+import 'package:flutter/services.dart' show rootBundle;
+
+// Firebase
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 Future<Map<String, dynamic>> loadParkingData() async {
-  final String response =
-      await rootBundle.loadString('assets/data/data.json');
+  final String response = await rootBundle.loadString('assets/data/data.json');
   final data = json.decode(response);
-  return data as Map<String, dynamic>;
+  return data;
 }
 
 class AppProvider extends ChangeNotifier {
-  // ====== Estacionamiento (simulación) ======
   int totalSpots = 0;
   int entries = 0; // lifetime entry counter
-  int exits = 0; // lifetime exit counter
+  int exits = 0;   // lifetime exit counter
   int availableSpots = 0;
   int occupiedSpots = 0;
-
-  // ====== Usuarios ======
   List<User> users = [];
   User? currentUser;
 
-  // ====== Simulación ======
   final Random random = Random();
   final int maxChange = 20; // max cars entering or leaving at once in simulation
   Timer? _simulationTimer;
 
-  // ====== Tema (modo oscuro) ======
   bool _isDarkMode = false;
   bool get isDarkMode => _isDarkMode;
   void toggleTheme() {
@@ -60,7 +54,17 @@ class AppProvider extends ChangeNotifier {
 
       _posts
         ..clear()
-        ..addAll(rawPosts.map((e) => Post.fromJson(e as Map<String, dynamic>)));
+        ..addAll(snapshot.docs.map((doc) {
+          final data = doc.data();
+          return Post(
+            id: data['id'],
+            area: data['zone'],
+            content: data['content'],
+            image: data['image_url'], // ✅ SUPABASE URL
+            createdAt: (data['createdAt'] as Timestamp).toDate(),
+          );
+        }));
+
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading Firestore posts: $e');
@@ -72,72 +76,6 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ====== Zona preferida (persistente, por USUARIO) ======
-  String _preferredZone = kZones.first;
-  String get preferredZone => _preferredZone;
-
-  String _zoneKeyForUser(User user) => 'preferred_zone_${user.id}';
-  // si quieres por email: 'preferred_zone_${user.email}'
-
-  Future<void> _loadPreferredZoneForUser(User user) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = _zoneKeyForUser(user);
-
-      String? saved = prefs.getString(key);
-
-      // Si no hay nada en SharedPreferences, intentamos ver si hay algo en data.json
-      if (saved == null) {
-        final data = await loadParkingData();
-
-        // Buscar al usuario en el JSON para ver si tiene preferred_zone
-        final usersJson = (data['users'] as List?) ?? [];
-        Map<String, dynamic>? match;
-        try {
-          match = usersJson
-              .cast<Map<String, dynamic>>()
-              .firstWhere((u) => u['email'] == user.email);
-        } catch (_) {
-          match = null;
-        }
-
-        final fromJson =
-            match?['preferred_zone'] ?? data['settings']?['preferred_zone'];
-
-        if (fromJson is String) {
-          saved = fromJson;
-        }
-      }
-
-      if (saved != null && kZones.contains(saved)) {
-        _preferredZone = saved;
-      } else {
-        _preferredZone = kZones.first;
-      }
-
-      notifyListeners();
-    } catch (e) {
-      debugPrint('Error al cargar zona preferida del usuario: $e');
-    }
-  }
-
-  Future<void> setPreferredZone(String zone) async {
-    if (!kZones.contains(zone)) return;
-    _preferredZone = zone;
-    notifyListeners();
-
-    final user = currentUser;
-    if (user == null) return;
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final key = _zoneKeyForUser(user);
-      await prefs.setString(key, zone);
-    } catch (e) {
-      debugPrint('Error al guardar zona preferida del usuario: $e');
-    }
-  }
-
   // ====== Datos de estacionamiento ======
   Map<String, int> get parkingData => {
         'total_spots': totalSpots,
@@ -146,7 +84,6 @@ class AppProvider extends ChangeNotifier {
         'registered_entries': entries,
         'registered_exits': exits,
       };
-
   User? get loggedInUser => currentUser;
 
   AppProvider() {
@@ -154,15 +91,14 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    // Mock login inicial (puedes quitarlo si solo usas FirebaseAuth)
     login("johndoe@example.com", "password123");
-
     await fetchParkingData();
 
     // Carga configuración inicial (modo oscuro + posts)
     final data = await loadParkingData();
     _isDarkMode =
         (data['settings']?['theme']?.toString().toLowerCase() == 'dark');
+
     await fetchPosts();
     updateParkingData();
     simulateParkingActivity();
@@ -173,14 +109,10 @@ class AppProvider extends ChangeNotifier {
     await fetchUsers();
 
     try {
-      final user = users.firstWhere(
-        (user) => user.email == email && user.password == password,
-      );
+      final user =
+          users.firstWhere((user) => user.email == email && user.password == password);
       currentUser = user;
       notifyListeners();
-
-      // cargar zona preferida de ESTE usuario
-      await _loadPreferredZoneForUser(user);
     } catch (e) {
       currentUser = null;
       notifyListeners();
@@ -189,8 +121,7 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> fetchUsers() async {
     final data = await loadParkingData();
-    users =
-        (data["users"] as List).map((user) => User.fromJson(user)).toList();
+    users = (data["users"] as List).map((user) => User.fromJson(user)).toList();
     notifyListeners();
   }
 
@@ -198,10 +129,10 @@ class AppProvider extends ChangeNotifier {
   Future<void> fetchParkingData() async {
     final data = await loadParkingData();
 
-    final parking = data["parking"] as Map<String, dynamic>;
-    totalSpots = parking["total_spots"] as int;
-    entries = parking["entries"] as int;
-    exits = parking["exits"] as int;
+    final parking = data["parking"];
+    totalSpots = parking["total_spots"];
+    entries = parking["entries"];
+    exits = parking["exits"];
     occupiedSpots = 0; // start empty
     availableSpots = totalSpots;
 
@@ -240,8 +171,7 @@ class AppProvider extends ChangeNotifier {
   void simulateParkingActivity() {
     _simulationTimer?.cancel(); // avoid multiple timers on hot reload
 
-    _simulationTimer =
-        Timer.periodic(const Duration(seconds: 5), (timer) {
+    _simulationTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       final action = random.nextInt(2);
       if (action == 0) {
         addEntry();
@@ -252,10 +182,9 @@ class AppProvider extends ChangeNotifier {
   }
 
   void logout() {
-  currentUser = null;
-  notifyListeners();
+    currentUser = null;
+    notifyListeners();
   }
-
 
   @override
   void dispose() {
