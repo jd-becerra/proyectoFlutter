@@ -14,6 +14,9 @@ import '../constants/zones.dart'; // <- zonas oficiales ITESO
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// Supabase
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class PublishScreen extends StatefulWidget {
   const PublishScreen({super.key});
   @override
@@ -60,26 +63,35 @@ class _PublishScreenState extends State<PublishScreen> {
     }
   }
 
+
   Future<void> _publish() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final post = Post(
-      id: DateTime.now().millisecondsSinceEpoch,
-      area: _area, // ahora guarda el nombre completo de la zona
-      content: _contentCtrl.text.trim(),
-      image: _picked?.path, // si es File local, se muestra con Image.file
-      createdAt: DateTime.now(),
-    );
+    final postId = int.parse(DateTime.now().millisecondsSinceEpoch.toString());
+    String? imageUrl;
 
-    // Añade al provider (lista local)
-    context.read<AppProvider>().addPost(post);
+    // Subir imagen a Supabase
+    final supabase = Supabase.instance.client;
+    if (_picked != null) {
+      final fileName = '$postId-${_picked!.name}';
+      final filePath = 'posts/$fileName';
 
-    // Feedback en UI
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Comentario publicado')),
-    );
+      final bytes = await _picked!.readAsBytes();
 
-    // Guarda también en Firestore
+      await supabase.storage
+          .from('Images')
+          .uploadBinary(
+            filePath,
+            bytes,
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: true),
+          );
+
+      // Obtener URL pública de la imagen
+      imageUrl = supabase.storage
+          .from('Images')
+          .getPublicUrl(filePath);
+    }
+
     await FirebaseFirestore.instance.collection('posts').add({
       'id': post.id,
       'zone': post.area,
@@ -87,10 +99,14 @@ class _PublishScreenState extends State<PublishScreen> {
       'image': post.image,
       'createdAt': post.createdAt,
     }).then(
-      (value) => debugPrint('Comentario publicado en Firestore: ${value.id}'),
+      (value) => print('Comentario publicado en Firestore: ' + value.id),
     ).catchError(
       (error) =>
           debugPrint('Error al publicar comentario en Firestore: $error'),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Comentario publicado')),
     );
 
     Navigator.pop(context);

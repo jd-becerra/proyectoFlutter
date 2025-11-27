@@ -11,36 +11,55 @@ import 'publish.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class Forum extends StatefulWidget {
+class Forum extends StatelessWidget {
   const Forum({super.key});
-  @override
-  State<Forum> createState() => _ForumState();
-}
-
-class _ForumState extends State<Forum> {
-  @override
-  void initState() {
-    super.initState();
-    // Si por alguna razón no llamas fetchPosts() en initialize(), descomenta:
-    // Future.microtask(() => context.read<AppProvider>().fetchPosts());
-  }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<AppProvider>();
-    final posts = provider.posts;
     final fmt = DateFormat('dd/MM/yyyy HH:mm');
 
     return Scaffold(
       appBar: AppTitle(text: 'Foro de Publicaciones'),
-      body: posts.isEmpty
-          ? const Center(child: Text('Aún no hay publicaciones'))
-          : ListView.separated(
-              padding: const EdgeInsets.all(16),
-              itemCount: posts.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (_, i) => _PostCard(post: posts[i], fmt: fmt),
-            ),
+
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('posts')
+            .orderBy('createdAt', descending: true)
+            .snapshots(),
+
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text('Aún no hay publicaciones'));
+          }
+
+          final docs = snapshot.data!.docs;
+
+          return ListView.separated(
+            padding: const EdgeInsets.all(16),
+            itemCount: docs.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+
+            itemBuilder: (_, i) {
+              final data = docs[i].data() as Map<String, dynamic>;
+
+              final post = Post(
+                id: data['id'],
+                area: data['zone'],
+                content: data['content'],
+                image: data['image_url'],
+                createdAt: (data['createdAt'] as Timestamp).toDate(),
+              );
+
+              return _PostCard(post: post, fmt: fmt);
+            },
+          );
+        },
+      ),
+
       floatingActionButton: FloatingActionButton(
         child: const Icon(Icons.edit),
         onPressed: () => Navigator.push(

@@ -53,16 +53,17 @@ class AppProvider extends ChangeNotifier {
 
   Future<void> fetchPosts() async {
     try {
-      final data = await loadParkingData();
-      final rawPosts = (data['posts'] as List?) ?? [];
+      final snapshot = await FirebaseFirestore.instance
+          .collection('posts')
+          .orderBy('createdAt', descending: true)
+          .get();
+
       _posts
         ..clear()
-        ..addAll(
-          rawPosts.map((e) => Post.fromJson(e as Map<String, dynamic>)),
-        );
+        ..addAll(rawPosts.map((e) => Post.fromJson(e as Map<String, dynamic>)));
       notifyListeners();
     } catch (e) {
-      debugPrint('Error al cargar posts: $e');
+      debugPrint('Error loading Firestore posts: $e');
     }
   }
 
@@ -158,14 +159,11 @@ class AppProvider extends ChangeNotifier {
 
     await fetchParkingData();
 
-    final settings = await loadParkingData();
-    _isDarkMode = (settings['settings']?['theme']
-                ?.toString()
-                .toLowerCase() ==
-            'dark');
-
+    // Carga configuración inicial (modo oscuro + posts)
+    final data = await loadParkingData();
+    _isDarkMode =
+        (data['settings']?['theme']?.toString().toLowerCase() == 'dark');
     await fetchPosts();
-
     updateParkingData();
     simulateParkingActivity();
   }
