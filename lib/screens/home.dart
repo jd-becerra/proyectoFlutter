@@ -168,6 +168,8 @@ class Home extends StatelessWidget {
               ),
             ),
 
+            const SizedBox(height: 20),
+
             // ---------------------- MAPA -------------------------
             Card(
               child: Padding(

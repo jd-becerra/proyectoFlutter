@@ -1,17 +1,22 @@
 class User {
-  final int id;
-  final String name;
+  final String id;
+  String name;
   final String email;
-  final String password;
+  String photoUrl;
+  final String preferredZone;
+  final String preferredTheme;
 
-  User({required this.id, required this.name, required this.email, required this.password});
+
+  User({required this.id, required this.name, required this.email, required this.photoUrl, required this.preferredZone, required this.preferredTheme});
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       id: json['id'],
       name: json['name'],
       email: json['email'],
-      password: json['password'],
+      photoUrl: json['photo_url'],
+      preferredZone: json['preferred_zone'],
+      preferredTheme: json['preferred_theme'],
     );
   }
 }

@@ -7,6 +7,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../constants/zones.dart'; // para el dropdown de zona
 
+// Para foto de perfil
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 class Profile extends StatefulWidget {
   @override
   State<Profile> createState() => _ProfileState();
@@ -54,6 +60,33 @@ class _ProfileState extends State<Profile> {
     setState(() => _readOnly = true);
   }
 
+  Future<void> _pickAndUploadAvatar(AppProvider provider) async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image == null) return;
+
+    final userId = provider.loggedInUser!.id;
+    final fileExt = image.name.split('.').last;
+    final filePath = 'avatars/$userId.$fileExt';
+
+    final bytes = await image.readAsBytes();
+
+    final supabase = Supabase.instance.client;
+
+    await supabase.storage
+        .from('Images')
+        .uploadBinary(
+          filePath,
+          bytes,
+          fileOptions: const FileOptions(upsert: true),
+        );
+
+    final url = supabase.storage.from('Images').getPublicUrl(filePath);
+
+    provider.setUserAvatar(url);
+  }
+
   @override
   Widget build(BuildContext context) {
     final appProvider = Provider.of<AppProvider>(context);
@@ -66,11 +99,11 @@ class _ProfileState extends State<Profile> {
     final hasUser = localUser != null || fbUser != null;
 
     // Si el provider tiene usuario y los TextField están vacíos, los llenamos
-    if (localUser != null &&
-        _nameController.text.isEmpty &&
-        _emailController.text.isEmpty) {
+    if (localUser != null) {
       _nameController.text = localUser.name;
       _emailController.text = localUser.email;
+    } else {
+      print('No local user found in provider');
     }
 
     void _logout(BuildContext context) async {
@@ -119,10 +152,7 @@ class _ProfileState extends State<Profile> {
       appBar: AppTitle(text: 'Perfil de Usuario'),
       body: !hasUser
           ? const Center(
-              child: Text(
-                'No user logged in',
-                style: TextStyle(fontSize: 20),
-              ),
+              child: Text('No user logged in', style: TextStyle(fontSize: 20)),
             )
           : Column(
               children: [
@@ -130,9 +160,62 @@ class _ProfileState extends State<Profile> {
                 SizedBox(
                   width: double.infinity,
                   height: 200,
-                  child: Image.asset(
-                    "assets/images/entrada.jpeg",
-                    fit: BoxFit.cover,
+                  child: GestureDetector(
+                    onTap: !_readOnly
+                        ? () => _pickAndUploadAvatar(appProvider)
+                        : null,
+                    child: SizedBox(
+                      width: 200,
+                      height: 200,
+                      child: GestureDetector(
+                        onTap: !_readOnly
+                            ? () => _pickAndUploadAvatar(appProvider)
+                            : null,
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            Container(
+                                padding: const EdgeInsets.all(0),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.blueGrey, width: 10),
+                                ),
+                              child: CircleAvatar(
+                                radius: 80,
+                                backgroundColor: Colors.grey[200],
+                                backgroundImage:
+                                    localUser?.photoUrl != null &&
+                                        localUser!.photoUrl!.isNotEmpty
+                                    ? NetworkImage(localUser!.photoUrl!)
+                                    : null,
+                                child: localUser?.photoUrl == null
+                                    ? const Icon(Icons.person, size: 60, color: Colors.grey)
+                                    : null,
+                              ),
+                            ),
+
+                            // Overlay when editing
+                            if (!_readOnly)
+                              Container(
+                                width: 140,
+                                height: 140,
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withOpacity(0.45),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+
+                            // Camera icon
+                            if (!_readOnly)
+                              const Icon(
+                                Icons.camera_alt,
+                                color: Colors.white,
+                                size: 36,
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
 
@@ -199,7 +282,7 @@ class _ProfileState extends State<Profile> {
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
-                          value: appProvider.preferredZone,
+                          initialValue: appProvider.preferredZone,
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.all(
@@ -210,22 +293,22 @@ class _ProfileState extends State<Profile> {
                           ),
                           items: [
                             for (final z in kZones)
-                              DropdownMenuItem(
-                                value: z,
-                                child: Text(z),
-                              ),
+                              DropdownMenuItem(value: z, child: Text(z)),
                           ],
-                          onChanged: (v) {
-                            if (v == null) return;
-                            appProvider.preferredZone = v;
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Zona preferida guardada: $v',
-                                ),
-                              ),
-                            );
-                          },
+
+                          onChanged: _readOnly
+                              ? null
+                              : (v) {
+                                  if (v == null) return;
+                                  appProvider.preferredZone = v;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Zona preferida guardada: $v',
+                                      ),
+                                    ),
+                                  );
+                                },
                         ),
 
                         const SizedBox(height: 32),
@@ -245,15 +328,18 @@ class _ProfileState extends State<Profile> {
                             onPressed: _toggleEditable,
                             icon: Icon(
                               _readOnly ? Icons.edit : Icons.cancel,
-                              color: _readOnly
-                                  ? Theme.of(context).primaryColor
-                                  : Colors.red,
+                              color: _readOnly ? (Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.grey[300]
+                                  : Colors.grey[800]) : Colors.red,
                             ),
                             label: Text(
                               _readOnly ? 'Editar Perfil' : 'Cancelar',
                               style: TextStyle(
                                 color: _readOnly
-                                    ? Theme.of(context).primaryColor
+                                    // Si el tema es oscuro, el botón de editar se ve gris claro, si no, gris oscuro
+                                    ?  (Theme.of(context).brightness == Brightness.dark
+                                        ? Colors.grey[300]
+                                        : Colors.grey[800])
                                     : Colors.red,
                               ),
                             ),

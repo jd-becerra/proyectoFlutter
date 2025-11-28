@@ -3,14 +3,14 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:proyecto_flutter/models/user.dart';
+import 'package:proyecto_flutter/models/user.dart' as AppUser;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/foundation.dart';
 
 // Firebase
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 Future<Map<String, dynamic>> loadParkingData() async {
   final String response = await rootBundle.loadString('assets/data/data.json');
@@ -25,8 +25,7 @@ class AppProvider extends ChangeNotifier {
   int occupiedSpots = 0;
   int availableSpots = 0;
 
-  List<User> users = [];
-  User? currentUser;
+  AppUser.User? loggedInUser;
 
   String? _preferredZone;
 
@@ -40,10 +39,9 @@ class AppProvider extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    login("johndoe@example.com", "password123");
-
     await _loadTotalSpotsFromFirestore();
     await _loadCountersFromFirebase();
+    await loadUserFromFirestore();
 
     final data = await loadParkingData();
     _isDarkMode =
@@ -56,8 +54,17 @@ class AppProvider extends ChangeNotifier {
   }
 
   String? get preferredZone => _preferredZone;
+
   set preferredZone(String? zone) {
     _preferredZone = zone;
+
+    if (loggedInUser != null) {
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(loggedInUser!.id)
+          .update({'preferredZone': zone});
+    }
+
     notifyListeners();
   }
 
@@ -71,8 +78,42 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void updateUser(User user) {
-    currentUser = user;
+  Future<void> loadUserFromFirestore() async {
+    final fbUser = FirebaseAuth.instance.currentUser;
+    if (fbUser == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(fbUser.uid)
+        .get();
+
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+
+    loggedInUser = AppUser.User(
+      id: fbUser.uid,
+      name: data['name'],
+      email: data['email'],
+      photoUrl: data['photo_url'],
+      preferredZone: data['preferred_zone'],
+      preferredTheme: data['preferred_theme'],
+    );
+
+    notifyListeners();
+  }
+
+  void updateUser(AppUser.User user) {
+    loggedInUser = user;
+    notifyListeners();
+  }
+
+  void setUserAvatar(String url) {
+    loggedInUser?.photoUrl = url;
+    FirebaseFirestore.instance
+        .collection('users')
+        .doc(loggedInUser?.id)
+        .update({'photo_url': url});
     notifyListeners();
   }
 
@@ -119,28 +160,6 @@ class AppProvider extends ChangeNotifier {
         'registered_entries': entries,
         'registered_exits': exits,
       };
-
-  User? get loggedInUser => currentUser;
-
-  Future<void> login(String email, String password) async {
-    await fetchUsers();
-
-    try {
-      final user =
-          users.firstWhere((u) => u.email == email && u.password == password);
-      currentUser = user;
-      notifyListeners();
-    } catch (_) {
-      currentUser = null;
-      notifyListeners();
-    }
-  }
-
-  Future<void> fetchUsers() async {
-    final data = await loadParkingData();
-    users = (data["users"] as List).map((u) => User.fromJson(u)).toList();
-    notifyListeners();
-  }
 
   // ====== Load total spots from Firestore ======
   Future<void> _loadTotalSpotsFromFirestore() async {
@@ -191,7 +210,7 @@ class AppProvider extends ChangeNotifier {
   }
 
   void logout() {
-    currentUser = null;
+    loggedInUser = null;
     notifyListeners();
   }
 
@@ -215,7 +234,7 @@ class AppProvider extends ChangeNotifier {
       occupiedSpots = data["current_occupancy"] ?? occupiedSpots;
       totalSpots = data["total_spots"] ?? totalSpots;
 
-      updateParkingData();   // recalculates availableSpots
+      updateParkingData();
     });
   }
 }
