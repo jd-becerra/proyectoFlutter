@@ -300,13 +300,6 @@ class _PostCardState extends State<_PostCard> {
                           ),
                         ),
                       ),
-                IconButton(
-                  icon: const Icon(Icons.share_outlined),
-                  onPressed: () => showPendingAlert(
-                    context,
-                    'Aquí se compartirá la publicación.',
-                  ),
-                ),
                 if (widget.post.authorId != null &&
                     widget.post.authorId!.isNotEmpty &&
                     Provider.of<AppProvider>(
