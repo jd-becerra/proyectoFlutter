@@ -78,7 +78,7 @@ class Login extends StatelessWidget {
                       'name': user.displayName ?? user.email?.split('@').first ?? 'Usuario',
                       'email': user.email ?? '',
                       'photo_url': user.photoURL ?? '',
-                      'preferred_zone': 'G1', // Zona por defecto
+                      'preferred_zone': 'Estacionamiento externo y profesores Norte', // Zona por defecto
                       'preferred_theme': 'light',
                       'created_at': FieldValue.serverTimestamp(),
                     });
@@ -96,7 +96,7 @@ class Login extends StatelessWidget {
                     name: data?['name'] ?? 'Usuario',
                     email: data?['email'] ?? '',
                     photoUrl: data?['photo_url'] ?? '',
-                    preferredZone: data?['preferred_zone'] ?? 'G1',
+                    preferredZone: data?['preferred_zone'] ?? 'Estacionamiento externo y profesores Norte',
                     preferredTheme: data?['preferred_theme'] ?? 'light',
                   ),
                 );

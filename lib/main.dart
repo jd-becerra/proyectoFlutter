@@ -25,10 +25,12 @@ void main() async {
   );
 
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => AppProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AppProvider()..syncUserFromFirebase()),
+      ],
       child: const MyApp(),
-    ),
+    )
   );
 }
 

@@ -12,11 +12,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-Future<Map<String, dynamic>> loadParkingData() async {
-  final String response = await rootBundle.loadString('assets/data/data.json');
-  return json.decode(response);
-}
-
 class AppProvider extends ChangeNotifier {
   int totalSpots = 0;
 
@@ -43,9 +38,7 @@ class AppProvider extends ChangeNotifier {
     await _loadCountersFromFirebase();
     await loadUserFromFirestore();
 
-    final data = await loadParkingData();
-    _isDarkMode =
-        (data['settings']?['theme']?.toString().toLowerCase() == 'dark');
+    _isDarkMode = loggedInUser?.preferredTheme == 'dark';
 
     _initParkingRealtimeListener();
     await fetchPosts();
@@ -236,5 +229,35 @@ class AppProvider extends ChangeNotifier {
 
       updateParkingData();
     });
+  }
+
+  Future<void> syncUserFromFirebase() async {
+    final fbUser = FirebaseAuth.instance.currentUser;
+
+    if (fbUser == null) {
+      loggedInUser = null;
+      notifyListeners();
+      return;
+    }
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(fbUser.uid)
+        .get();
+
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+
+    loggedInUser = AppUser.User(
+      id: fbUser.uid,
+      name: data['name'] ?? fbUser.displayName ?? '',
+      email: data['email'] ?? fbUser.email ?? '',
+      photoUrl: data['photo_url'],
+      preferredZone: data['preferred_zone'] ?? 'Estacionamiento externo y profesores Norte',
+      preferredTheme: data['preferred_theme'] ?? 'light',
+    );
+
+    notifyListeners();
   }
 }

@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Post {
-  final int id;
-  final String area;       // tu JSON no trae "area"; default "G1"
-  final String content;    // toma "content" o "title"
-  final String? image;     // ruta asset/URL opcional
+  final String id;
+  final String area;
+  final String content;
+  final String? image;
   final DateTime createdAt;
+  final String? authorId;
 
   Post({
     required this.id,
@@ -11,25 +14,38 @@ class Post {
     required this.content,
     this.image,
     required this.createdAt,
+    this.authorId,
   });
 
-  factory Post.fromJson(Map<String, dynamic> json) {
+  factory Post.fromJson(Map<String, dynamic> json, String docId) {
     return Post(
-      id: (json['id'] as num?)?.toInt() ?? DateTime.now().millisecondsSinceEpoch,
-      area: (json['area'] ?? 'G1').toString(),
-      content: (json['content'] ?? json['title'] ?? '').toString(),
-      image: json['image']?.toString(),
-      createdAt: json['created_at'] != null
-          ? DateTime.tryParse(json['created_at'].toString()) ?? DateTime.now()
+      id: json['id']?.toString() ?? docId,
+
+      area: json['zone']?.toString() 
+          ?? json['area']?.toString() 
+          ?? 'Sin zona',
+
+      content: json['content']?.toString() 
+          ?? json['title']?.toString() 
+          ?? '',
+
+      image: json['image_url']?.toString() 
+          ?? json['image']?.toString(),
+
+      createdAt: json['createdAt'] is Timestamp
+          ? (json['createdAt'] as Timestamp).toDate()
           : DateTime.now(),
+
+      authorId: json['author_id']?.toString(),
     );
   }
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'area': area,
+    'zone': area,
     'content': content,
-    'image': image,
-    'created_at': createdAt.toIso8601String(),
+    'image_url': image,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'author_id': authorId,
   };
 }
