@@ -12,8 +12,20 @@ import '../provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class Forum extends StatelessWidget {
+class Forum extends StatefulWidget {
   const Forum({super.key});
+
+  @override
+  State<Forum> createState() => _ForumState();
+}
+
+class _ForumState extends State<Forum> {
+  final ValueNotifier<int> refreshKey = ValueNotifier(0);
+
+  Future<void> _refresh() async {
+    await Future.delayed(const Duration(milliseconds: 500));
+    refreshKey.value++;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -22,35 +34,50 @@ class Forum extends StatelessWidget {
     return Scaffold(
       appBar: AppTitle(text: 'Foro de Publicaciones'),
 
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('posts')
-            .orderBy('createdAt', descending: true)
-            .snapshots(),
+      body: ValueListenableBuilder(
+        valueListenable: refreshKey,
+        builder: (context, value, _) {
+          return RefreshIndicator(
+            onRefresh: _refresh,
+            child: StreamBuilder<QuerySnapshot>(
+              key: ValueKey(value),
+              stream: FirebaseFirestore.instance
+                  .collection('posts')
+                  .orderBy('createdAt', descending: true)
+                  .snapshots(),
 
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('Aún no hay publicaciones'));
-          }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(height: 300),
+                      Center(child: Text('Aún no hay publicaciones')),
+                    ],
+                  );
+                }
 
-          final docs = snapshot.data!.docs;
+                final docs = snapshot.data!.docs;
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: docs.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-
-            itemBuilder: (_, i) {
-              final post = Post.fromJson(
-                docs[i].data() as Map<String, dynamic>,
-                docs[i].id.toString(),
-              );
-              return _PostCard(post: post, fmt: fmt);
-            },
+                return ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: docs.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (_, i) {
+                    final post = Post.fromJson(
+                      docs[i].data() as Map<String, dynamic>,
+                      docs[i].id.toString(),
+                    );
+                    return _PostCard(post: post, fmt: fmt);
+                  },
+                );
+              },
+            ),
           );
         },
       ),
