@@ -9,17 +9,20 @@ import '../widgets/pending_alert.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 // Firebase
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 // Supabase
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+// Zonas definidas en constants/zones.dart
+import 'package:proyecto_flutter/constants/zones.dart';
+
 class PublishScreen extends StatefulWidget {
   final Post? post;
 
   const PublishScreen({super.key, this.post});
+
   @override
   State<PublishScreen> createState() => _PublishScreenState();
 }
@@ -27,17 +30,28 @@ class PublishScreen extends StatefulWidget {
 class _PublishScreenState extends State<PublishScreen> {
   final _formKey = GlobalKey<FormState>();
   final _contentCtrl = TextEditingController();
-  String _area = 'Estacionamiento externo y profesores Norte';
+
+  // Zona actual seleccionada
+  String _area = kZones.first;
   XFile? _picked;
 
   @override
   void initState() {
     super.initState();
 
-    // Si se edita una publicación, cargar datos
+    // Si se edita una publicación, cargar datos existentes
     if (widget.post != null) {
       _contentCtrl.text = widget.post!.content;
       _area = widget.post!.area;
+    } else {
+      // Si es una nueva publicación, intentar usar la zona preferida del usuario
+      final provider = Provider.of<AppProvider>(context, listen: false);
+      if (provider.preferredZone != null &&
+          kZones.contains(provider.preferredZone)) {
+        _area = provider.preferredZone!;
+      } else {
+        _area = kZones.first;
+      }
     }
   }
 
@@ -69,9 +83,9 @@ class _PublishScreenState extends State<PublishScreen> {
         ? widget.post!.id.toString()
         : DateTime.now().millisecondsSinceEpoch.toString();
 
-    String? imageUrl = widget.post?.image; // keep existing image if no change
+    String? imageUrl = widget.post?.image; // mantener imagen existente si no cambia
 
-    // Upload new image if user picked one
+    // Subir nueva imagen a Supabase si el usuario seleccionó una
     final supabase = Supabase.instance.client;
     if (_picked != null) {
       final fileName = '$postId-${_picked!.name}';
@@ -101,9 +115,9 @@ class _PublishScreenState extends State<PublishScreen> {
     if (isEditing) {
       // Editar
       await doc.update(data);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Publicación actualizada')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Publicación actualizada')),
+      );
     } else {
       // Crear nuevo post
       data['id'] = postId;
@@ -112,9 +126,9 @@ class _PublishScreenState extends State<PublishScreen> {
       data['author_id'] = FirebaseAuth.instance.currentUser?.uid;
 
       await doc.set(data);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Se publicó el comentario')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Se publicó el comentario')),
+      );
     }
 
     if (mounted) Navigator.pop(context);
@@ -139,14 +153,19 @@ class _PublishScreenState extends State<PublishScreen> {
               const SizedBox(height: 8),
               DropdownMenu<String>(
                 initialSelection: _area,
-                onSelected: (v) => setState(() => _area = v ?? 'Estacionamiento externo y profesores Norte'),
-                dropdownMenuEntries: const [
-                  DropdownMenuEntry(value: 'Estacionamiento externo y profesores Norte', label: 'Estacionamiento externo y profesores Norte'),
-                  DropdownMenuEntry(value: 'Estacionamiento controlado Norte', label: 'Estacionamiento controlado Norte'),
-                  DropdownMenuEntry(value: 'Estacionamiento controlado Poniente', label: 'Estacionamiento controlado Poniente'),
-                  DropdownMenuEntry(value: 'Estacionamiento profesores Sur', label: 'Estacionamiento profesores Sur'),
-                  DropdownMenuEntry(value: 'Acceso peatonal puerta Sur', label: 'Acceso peatonal puerta Sur'),
-                ],
+                onSelected: (v) {
+                  setState(() {
+                    _area = v ?? kZones.first;
+                  });
+                },
+                dropdownMenuEntries: kZones
+                    .map(
+                      (z) => DropdownMenuEntry<String>(
+                        value: z,
+                        label: z,
+                      ),
+                    )
+                    .toList(),
               ),
               const SizedBox(height: 16),
               Text('Escribe tu comentario', style: text.titleMedium),
@@ -155,12 +174,12 @@ class _PublishScreenState extends State<PublishScreen> {
                 controller: _contentCtrl,
                 maxLines: 5,
                 decoration: const InputDecoration(
-                  hintText: 'Hoy está muy lleno en la zona Estacionamiento externo y profesores Norte…',
+                  hintText:
+                      'Hoy está muy lleno en la zona Estacionamiento externo y profesores Norte…',
                   border: OutlineInputBorder(),
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Escribe un comentario'
-                    : null,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Escribe un comentario' : null,
               ),
               const SizedBox(height: 16),
               GestureDetector(
@@ -179,7 +198,7 @@ class _PublishScreenState extends State<PublishScreen> {
                           borderRadius: BorderRadius.circular(12),
                           child: kIsWeb
                               ? Image.network(
-                                  _picked!.path, // web gives you a blob URL
+                                  _picked!.path, // en web es un blob URL
                                   fit: BoxFit.cover,
                                   width: double.infinity,
                                 )
@@ -195,7 +214,7 @@ class _PublishScreenState extends State<PublishScreen> {
               ElevatedButton.icon(
                 icon: const Icon(Icons.send),
                 label: Text(widget.post != null ? 'Actualizar' : 'Publicar'),
-                onPressed: () async => await _publish(),
+                onPressed: _publish,
               ),
             ],
           ),

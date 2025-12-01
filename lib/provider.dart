@@ -22,7 +22,34 @@ class AppProvider extends ChangeNotifier {
 
   AppUser.User? loggedInUser;
 
+  /// Zona de estacionamiento preferida (se sincroniza con loggedInUser.preferredZone)
   String? _preferredZone;
+  String? get preferredZone => _preferredZone;
+
+  /// Setter de zona preferida: recibe SIEMPRE un String no nulo
+  set preferredZone(String zone) {
+    _preferredZone = zone;
+
+    // Actualizamos también el modelo de usuario en memoria
+    if (loggedInUser != null) {
+      loggedInUser = AppUser.User(
+        id: loggedInUser!.id,
+        name: loggedInUser!.name,
+        email: loggedInUser!.email,
+        photoUrl: loggedInUser!.photoUrl,
+        preferredZone: zone, // <- aquí ya no hay error de null
+        preferredTheme: loggedInUser!.preferredTheme,
+      );
+
+      // Guardamos en Firestore por USUARIO (campo preferred_zone)
+      FirebaseFirestore.instance
+          .collection('users')
+          .doc(loggedInUser!.id)
+          .update({'preferred_zone': zone});
+    }
+
+    notifyListeners();
+  }
 
   static const double inMin = 0;
   static const double inMax = 4;
@@ -36,29 +63,19 @@ class AppProvider extends ChangeNotifier {
   Future<void> initialize() async {
     await _loadTotalSpotsFromFirestore();
     await _loadCountersFromFirebase();
-    await loadUserFromFirestore();
 
+    // En lugar de loadUserFromFirestore, usamos siempre syncUserFromFirebase,
+    // que parte de FirebaseAuth.currentUser y aplica defaults.
+    await syncUserFromFirebase();
+
+    // Sincronizamos tema y zona una vez que se cargó (si hay) el usuario
     _isDarkMode = loggedInUser?.preferredTheme == 'dark';
+    _preferredZone = loggedInUser?.preferredZone;
 
     _initParkingRealtimeListener();
     await fetchPosts();
 
     updateParkingData();
-  }
-
-  String? get preferredZone => _preferredZone;
-
-  set preferredZone(String? zone) {
-    _preferredZone = zone;
-
-    if (loggedInUser != null) {
-      FirebaseFirestore.instance
-          .collection('users')
-          .doc(loggedInUser!.id)
-          .update({'preferredZone': zone});
-    }
-
-    notifyListeners();
   }
 
   final Random random = Random();
@@ -71,6 +88,7 @@ class AppProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ====== Usuario desde Firestore (método utilitario, lo dejamos por si lo usas en otro lado) ======
   Future<void> loadUserFromFirestore() async {
     final fbUser = FirebaseAuth.instance.currentUser;
     if (fbUser == null) return;
@@ -93,20 +111,35 @@ class AppProvider extends ChangeNotifier {
       preferredTheme: data['preferred_theme'],
     );
 
+    // Sincronizamos _preferredZone con el usuario
+    _preferredZone = loggedInUser?.preferredZone;
+
     notifyListeners();
   }
 
   void updateUser(AppUser.User user) {
     loggedInUser = user;
+    _preferredZone = user.preferredZone;
     notifyListeners();
   }
 
   void setUserAvatar(String url) {
-    loggedInUser?.photoUrl = url;
+    if (loggedInUser == null) return;
+
+    loggedInUser = AppUser.User(
+      id: loggedInUser!.id,
+      name: loggedInUser!.name,
+      email: loggedInUser!.email,
+      photoUrl: url,
+      preferredZone: loggedInUser!.preferredZone,
+      preferredTheme: loggedInUser!.preferredTheme,
+    );
+
     FirebaseFirestore.instance
         .collection('users')
-        .doc(loggedInUser?.id)
+        .doc(loggedInUser!.id)
         .update({'photo_url': url});
+
     notifyListeners();
   }
 
@@ -157,12 +190,12 @@ class AppProvider extends ChangeNotifier {
   // ====== Load total spots from Firestore ======
   Future<void> _loadTotalSpotsFromFirestore() async {
     final doc = await FirebaseFirestore.instance
-        .collection("spots")
-        .doc("1")
+        .collection('spots')
+        .doc('1')
         .get();
 
     if (doc.exists) {
-      totalSpots = doc.data()?["total_spots"] ?? 0;
+      totalSpots = doc.data()?['total_spots'] ?? 0;
     } else {
       totalSpots = 0;
     }
@@ -177,16 +210,16 @@ class AppProvider extends ChangeNotifier {
 
   // ====== Load persistent counters from RTDB ======
   Future<void> _loadCountersFromFirebase() async {
-    final ref = FirebaseDatabase.instance.ref("parking");
+    final ref = FirebaseDatabase.instance.ref('parking');
 
     final snapshot = await ref.get();
     final data = snapshot.value as Map<dynamic, dynamic>?;
 
     if (data != null) {
-      entries = data["entries"] ?? 0;
-      exits = data["exits"] ?? 0;
-      occupiedSpots = data["current_occupancy"] ?? 0;
-      // totalSpots is still loaded from Firestore and stays that way
+      entries = data['entries'] ?? 0;
+      exits = data['exits'] ?? 0;
+      occupiedSpots = data['current_occupancy'] ?? 0;
+      // totalSpots se sigue cargando desde Firestore
     }
 
     updateParkingData();
@@ -194,16 +227,17 @@ class AppProvider extends ChangeNotifier {
 
   // ====== Save counters back to RTDB ======
   Future<void> _saveState() async {
-    final ref = FirebaseDatabase.instance.ref("parking");
+    final ref = FirebaseDatabase.instance.ref('parking');
     await ref.update({
-      "entries": entries,
-      "exits": exits,
-      "occupied": occupiedSpots,
+      'entries': entries,
+      'exits': exits,
+      'occupied': occupiedSpots,
     });
   }
 
   void logout() {
     loggedInUser = null;
+    // NO tocamos _preferredZone en Firestore, solo limpiamos en memoria
     notifyListeners();
   }
 
@@ -215,22 +249,23 @@ class AppProvider extends ChangeNotifier {
 
   // ====== Distance sensor integration =====
   void _initParkingRealtimeListener() {
-    final ref = FirebaseDatabase.instance.ref("parking");
+    final ref = FirebaseDatabase.instance.ref('parking');
 
     ref.onValue.listen((event) {
       final data = event.snapshot.value as Map?;
 
       if (data == null) return;
 
-      entries = data["entries"] ?? entries;
-      exits = data["exits"] ?? exits;
-      occupiedSpots = data["current_occupancy"] ?? occupiedSpots;
-      totalSpots = data["total_spots"] ?? totalSpots;
+      entries = data['entries'] ?? entries;
+      exits = data['exits'] ?? exits;
+      occupiedSpots = data['current_occupancy'] ?? occupiedSpots;
+      totalSpots = data['total_spots'] ?? totalSpots;
 
       updateParkingData();
     });
   }
 
+  // ====== Sincronizar usuario (por si cambió en Firestore) ======
   Future<void> syncUserFromFirebase() async {
     final fbUser = FirebaseAuth.instance.currentUser;
 
@@ -254,9 +289,13 @@ class AppProvider extends ChangeNotifier {
       name: data['name'] ?? fbUser.displayName ?? '',
       email: data['email'] ?? fbUser.email ?? '',
       photoUrl: data['photo_url'],
-      preferredZone: data['preferred_zone'] ?? 'Estacionamiento externo y profesores Norte',
+      preferredZone: data['preferred_zone'] ??
+          'Estacionamiento externo y profesores Norte',
       preferredTheme: data['preferred_theme'] ?? 'light',
     );
+
+    // Volvemos a sincronizar la zona preferida interna
+    _preferredZone = loggedInUser?.preferredZone;
 
     notifyListeners();
   }
