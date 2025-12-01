@@ -1,19 +1,18 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:proyecto_flutter/provider.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:image_picker/image_picker.dart';
+
+import 'package:proyecto_flutter/provider.dart';
 import 'package:proyecto_flutter/widgets/title.dart';
 import 'package:proyecto_flutter/screens/login.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
-import '../constants/zones.dart'; // para el dropdown de zona
-
-// Para foto de perfil
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:proyecto_flutter/constants/zones.dart';
 
 class Profile extends StatefulWidget {
+  const Profile({super.key});
+
   @override
   State<Profile> createState() => _ProfileState();
 }
@@ -23,12 +22,28 @@ class _ProfileState extends State<Profile> {
   late final TextEditingController _nameController;
   late final TextEditingController _emailController;
 
+  String? _selectedZone;
+  XFile? _pickedPhoto;
+
   @override
   void initState() {
     super.initState();
-    final fbUser = FirebaseAuth.instance.currentUser;
-    _nameController = TextEditingController(text: fbUser?.displayName ?? '');
-    _emailController = TextEditingController(text: fbUser?.email ?? '');
+    _nameController = TextEditingController();
+    _emailController = TextEditingController();
+
+    // Cargar datos una vez que el Provider esté disponible
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final appProvider = context.read<AppProvider>();
+      final user = appProvider.loggedInUser;
+
+      if (user != null) {
+        _nameController.text = user.name;
+        _emailController.text = user.email;
+      }
+
+      _selectedZone = appProvider.preferredZone;
+      setState(() {});
+    });
   }
 
   @override
@@ -51,306 +66,229 @@ class _ProfileState extends State<Profile> {
         content: const Text('Se han cambiado los datos del perfil'),
         action: SnackBarAction(
           label: 'X',
-          onPressed: () {
-            messenger.hideCurrentSnackBar();
-          },
+          onPressed: () => messenger.hideCurrentSnackBar(),
         ),
       ),
     );
     setState(() => _readOnly = true);
   }
 
-  Future<void> _pickAndUploadAvatar(AppProvider provider) async {
+  Future<void> _pickProfilePhoto() async {
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
+    try {
+      final img = await picker.pickImage(source: ImageSource.gallery);
+      if (img != null) {
+        setState(() {
+          _pickedPhoto = img;
+        });
+      }
+    } catch (_) {
+    }
+  }
 
-    if (image == null) return;
+  Future<void> _logout(BuildContext context) async {
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
 
-    final userId = provider.loggedInUser!.id;
-    final fileExt = image.name.split('.').last;
-    final filePath = 'avatars/$userId.$fileExt';
+    // Firebase sign out
+    await FirebaseAuth.instance.signOut();
 
-    final bytes = await image.readAsBytes();
+    // Limpiar usuario del provider
+    appProvider.logout();
 
-    final supabase = Supabase.instance.client;
+    if (!mounted) return;
 
-    await supabase.storage
-        .from('Images')
-        .uploadBinary(
-          filePath,
-          bytes,
-          fileOptions: const FileOptions(upsert: true),
-        );
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const Login()),
+      (route) => false,
+    );
+  }
 
-    final url = supabase.storage.from('Images').getPublicUrl(filePath);
-
-    provider.setUserAvatar(url);
+  void _showLogoutMsg() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cerrar Sesión'),
+        content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _logout(context);
+            },
+            child: const Text('Cerrar Sesión'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final appProvider = Provider.of<AppProvider>(context);
+    final user = appProvider.loggedInUser;
 
-    // Usuario del provider (JSON) y usuario de Firebase
-    final localUser = appProvider.loggedInUser;
-    final fbUser = FirebaseAuth.instance.currentUser;
-
-    // Consideramos que hay usuario si alguno de los dos no es null
-    final hasUser = localUser != null || fbUser != null;
-
-    // Si el provider tiene usuario y los TextField están vacíos, los llenamos
-    if (localUser != null) {
-      _nameController.text = localUser.name;
-      _emailController.text = localUser.email;
-    } else {
-      print('No local user found in provider');
-    }
-
-    void _logout(BuildContext context) async {
-      final appProvider = Provider.of<AppProvider>(context, listen: false);
-
-      // Cerrar sesión en Firebase
-      await FirebaseAuth.instance.signOut();
-
-      // Limpiar usuario local
-      appProvider.logout();
-
-      // Navegar al login
-      if (context.mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const Login()),
-          (route) => false,
-        );
+    if (user != null) {
+      if (_nameController.text.isEmpty) {
+        _nameController.text = user.name;
       }
-    }
-
-    void _showLogoutMsg() {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Cerrar Sesión'),
-          content: const Text('¿Estás seguro de que deseas cerrar sesión?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _logout(context);
-              },
-              child: const Text('Cerrar Sesión'),
-            ),
-          ],
-        ),
-      );
+      if (_emailController.text.isEmpty) {
+        _emailController.text = user.email;
+      }
+      _selectedZone ??= appProvider.preferredZone;
     }
 
     return Scaffold(
       appBar: AppTitle(text: 'Perfil de Usuario'),
-      body: !hasUser
+      body: user == null
           ? const Center(
-              child: Text('No user logged in', style: TextStyle(fontSize: 20)),
+              child: Text('No hay usuario autenticado',
+                  style: TextStyle(fontSize: 18)),
             )
-          : Column(
-              children: [
-                // Imagen superior
-                SizedBox(
-                  width: double.infinity,
-                  height: 200,
-                  child: GestureDetector(
-                    onTap: !_readOnly
-                        ? () => _pickAndUploadAvatar(appProvider)
-                        : null,
-                    child: SizedBox(
-                      width: 200,
-                      height: 200,
-                      child: GestureDetector(
-                        onTap: !_readOnly
-                            ? () => _pickAndUploadAvatar(appProvider)
-                            : null,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Container(
-                                padding: const EdgeInsets.all(0),
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.blueGrey, width: 10),
-                                ),
-                              child: CircleAvatar(
-                                radius: 80,
-                                backgroundColor: Colors.grey[200],
-                                backgroundImage:
-                                    localUser?.photoUrl != null &&
-                                        localUser!.photoUrl!.isNotEmpty
-                                    ? NetworkImage(localUser!.photoUrl!)
-                                    : null,
-                                child: localUser?.photoUrl == null
-                                    ? const Icon(Icons.person, size: 60, color: Colors.grey)
-                                    : null,
-                              ),
-                            ),
+          : SingleChildScrollView(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+              child: Column(
+                children: [
+                  // Avatar circular
+                  GestureDetector(
+                    onTap: _pickProfilePhoto,
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey.shade300,
+                      backgroundImage: _pickedPhoto != null
+                          ? FileImage(File(_pickedPhoto!.path))
+                          : null,
+                      child: _pickedPhoto == null
+                          ? const Icon(Icons.person,
+                              size: 60, color: Colors.grey)
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextButton(
+                    onPressed: _showLogoutMsg,
+                    child: const Text(
+                      'Cerrar Sesión',
+                      style: TextStyle(color: Colors.red),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
 
-                            // Overlay when editing
-                            if (!_readOnly)
-                              Container(
-                                width: 140,
-                                height: 140,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.45),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-
-                            // Camera icon
-                            if (!_readOnly)
-                              const Icon(
-                                Icons.camera_alt,
-                                color: Colors.white,
-                                size: 36,
-                              ),
-                          ],
+                  // Name
+                  TextField(
+                    controller: _nameController,
+                    readOnly: _readOnly,
+                    decoration: const InputDecoration(
+                      labelText: 'Name',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(8.0),
                         ),
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 12),
 
-                // Contenido
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      top: 0,
-                      bottom: 0,
-                      left: 16.0,
-                      right: 16.0,
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            TextButton(
-                              onPressed: _showLogoutMsg,
-                              child: const Text(
-                                'Cerrar Sesión',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                            ),
-                          ],
+                  // Email
+                  TextField(
+                    controller: _emailController,
+                    readOnly: true, // normalmente no se edita el correo
+                    decoration: const InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(8.0),
                         ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _nameController,
-                          readOnly: _readOnly,
-                          decoration: const InputDecoration(
-                            labelText: 'Name',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(8.0),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _emailController,
-                          readOnly: _readOnly,
-                          keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(
-                            labelText: 'Email',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(8.0),
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // --- Zona preferida ---
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'Zona de estacionamiento preferida',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        DropdownButtonFormField<String>(
-                          initialValue: appProvider.preferredZone,
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(8.0),
-                              ),
-                            ),
-                            labelText: 'Selecciona tu zona',
-                          ),
-                          items: [
-                            for (final z in kZones)
-                              DropdownMenuItem(value: z, child: Text(z)),
-                          ],
-
-                          onChanged: _readOnly
-                              ? null
-                              : (v) {
-                                  if (v == null) return;
-                                  appProvider.preferredZone = v;
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        'Zona preferida guardada: $v',
-                                      ),
-                                    ),
-                                  );
-                                },
-                        ),
-
-                        const SizedBox(height: 32),
-
-                        if (!_readOnly)
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton.icon(
-                              onPressed: _save,
-                              icon: const Icon(Icons.save),
-                              label: const Text('Guardar Cambios'),
-                            ),
-                          ),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _toggleEditable,
-                            icon: Icon(
-                              _readOnly ? Icons.edit : Icons.cancel,
-                              color: _readOnly ? (Theme.of(context).brightness == Brightness.dark
-                                  ? Colors.grey[300]
-                                  : Colors.grey[800]) : Colors.red,
-                            ),
-                            label: Text(
-                              _readOnly ? 'Editar Perfil' : 'Cancelar',
-                              style: TextStyle(
-                                color: _readOnly
-                                    // Si el tema es oscuro, el botón de editar se ve gris claro, si no, gris oscuro
-                                    ?  (Theme.of(context).brightness == Brightness.dark
-                                        ? Colors.grey[300]
-                                        : Colors.grey[800])
-                                    : Colors.red,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+
+                  // Zona de estacionamiento preferida
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Zona de estacionamiento preferida',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<String>(
+                    value: _selectedZone,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(8.0),
+                        ),
+                      ),
+                      labelText: 'Selecciona tu zona',
+                    ),
+                    items: kZones
+                        .map(
+                          (z) =>
+                              DropdownMenuItem(value: z, child: Text(z)),
+                        )
+                        .toList(),
+                    // el dropdown SIEMPRE debe poder abrirse
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _selectedZone = value;
+                      });
+                      appProvider.preferredZone = value;
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                              'Zona preferida guardada: $value'),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 32),
+
+                  if (!_readOnly)
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _save,
+                        icon: const Icon(Icons.save),
+                        label: const Text('Guardar Cambios'),
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _toggleEditable,
+                      icon: Icon(
+                        _readOnly ? Icons.edit : Icons.cancel,
+                        color: _readOnly
+                            ? Theme.of(context).primaryColor
+                            : Colors.red,
+                      ),
+                      label: Text(
+                        _readOnly ? 'Editar Perfil' : 'Cancelar',
+                        style: TextStyle(
+                          color: _readOnly
+                              ? Theme.of(context).primaryColor
+                              : Colors.red,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.grey.shade100,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
     );
   }
 }
+

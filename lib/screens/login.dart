@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:proyecto_flutter/provider.dart';
 import 'package:proyecto_flutter/screens/navigation.dart';
-import 'package:proyecto_flutter/models/user.dart' as AppUser;
 
 // Firebase
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
@@ -15,104 +14,125 @@ class Login extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final appProvider = Provider.of<AppProvider>(context);
+    final appProvider = Provider.of<AppProvider>(context, listen: false);
 
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          var clientId =
-              '818985157187-0jt2i61e6fsk49c1mm208ea60idu8j32.apps.googleusercontent.com';
-          return SignInScreen(
-            providers: [
-              EmailAuthProvider(),
-              GoogleProvider(clientId: clientId),
-            ],
-            headerBuilder: (context, constraints, shrinkOffset) {
-              return Padding(
-                padding: const EdgeInsets.all(20),
-                child: AspectRatio(
-                  aspectRatio: 1,
-                  child: Image.asset('assets/images/parking_header.png'),
-                ),
-              );
-            },
-            subtitleBuilder: (context, action) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: action == AuthAction.signIn
-                    ? const Text(
-                        'Bienvenido al Estacionamiento ITESO, por favor inicia sesión.',
-                        textAlign: TextAlign.center,
-                      )
-                    : const Text(
-                        'Crea una cuenta para acceder al Estacionamiento ITESO.',
-                        textAlign: TextAlign.center,
-                      ),
-              );
-            },
-            footerBuilder: (context, action) {
-              return const Padding(
-                padding: EdgeInsets.only(top: 16),
-                child: Text(
-                  'Al continuar, aceptas nuestros términos y condiciones.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
-                ),
-              );
-            },
-            actions: [
-              AuthStateChangeAction<SignedIn>((context, state) async {
-                final user = state.user;
-                if (user == null) return;
+    // IMPORTANTE: sin const, para poder usar este valor abajo
+    final clientId =
+        '818985157187-0jt2i61e6fsk49c1mm208ea60idu8j32.apps.googleusercontent.com';
 
-                final usersRef = FirebaseFirestore.instance.collection('users');
-                final userDoc = usersRef.doc(user.uid);
-                final docSnapshot = await userDoc.get();
+    // Función común para cuando ya tenemos un usuario autenticado
+    Future<void> _handleAuthUser(
+      BuildContext ctx,
+      User user, {
+      required bool isNewUser,
+    }) async {
+      final usersRef = FirebaseFirestore.instance.collection('users');
+      final userDoc = usersRef.doc(user.uid);
+      final docSnapshot = await userDoc.get();
 
-                // Si el usuario no existe en Firestore, crearlo
-                try {
-                  if (!docSnapshot.exists) {
-                    await userDoc.set({
-                      // Si su nombre no existe, usar correo pero quitar todo despues de @
-                      'name': user.displayName ?? user.email?.split('@').first ?? 'Usuario',
-                      'email': user.email ?? '',
-                      'photo_url': user.photoURL ?? '',
-                      'preferred_zone': 'Estacionamiento externo y profesores Norte', // Zona por defecto
-                      'preferred_theme': 'light',
-                      'created_at': FieldValue.serverTimestamp(),
-                    });
-                  } 
-                } catch (e) {
-                  // Manejar error al crear usuario
-                  print('Error al crear usuario en Firestore: $e');
-                }
-                
-                final data = (await userDoc.get()).data();
-
-                appProvider.updateUser(
-                  AppUser.User(
-                    id: user.uid,
-                    name: data?['name'] ?? 'Usuario',
-                    email: data?['email'] ?? '',
-                    photoUrl: data?['photo_url'] ?? '',
-                    preferredZone: data?['preferred_zone'] ?? 'Estacionamiento externo y profesores Norte',
-                    preferredTheme: data?['preferred_theme'] ?? 'light',
-                  ),
-                );
-
-                // Ir a main.dart
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const Navigation()),
-                );
-              }),
-            ],
-          );
+      // Si el usuario no existe en Firestore, crearlo
+      try {
+        if (!docSnapshot.exists) {
+          await userDoc.set({
+            'name': user.displayName ??
+                user.email?.split('@').first ??
+                'Usuario',
+            'email': user.email ?? '',
+            'photo_url': user.photoURL ?? '',
+            'preferred_zone':
+                'Estacionamiento externo y profesores Norte',
+            'preferred_theme': 'light',
+            'created_at': FieldValue.serverTimestamp(),
+          });
         }
+      } catch (e) {
+        debugPrint('Error al crear usuario en Firestore: $e');
+      }
 
-        return const Navigation();
+      // Sincronizar provider con Firestore/FirebaseAuth
+      await appProvider.syncUserFromFirebase();
+
+      if (!ctx.mounted) return;
+
+      // Si es un registro nuevo, mostramos un mensajito
+      if (isNewUser) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          const SnackBar(
+            content: Text('Cuenta creada, iniciando sesión...'),
+          ),
+        );
+      }
+
+      // Ir a la navegación principal
+      Navigator.pushReplacement(
+        ctx,
+        MaterialPageRoute(builder: (_) => const Navigation()),
+      );
+    }
+
+    return SignInScreen(
+      providers: [
+        EmailAuthProvider(),
+        GoogleProvider(clientId: clientId),
+      ],
+      headerBuilder: (context, constraints, shrinkOffset) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: AspectRatio(
+            aspectRatio: 1,
+            child: Image.asset('assets/images/parking_header.png'),
+          ),
+        );
       },
+      subtitleBuilder: (context, action) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: action == AuthAction.signIn
+              ? const Text(
+                  'Bienvenido al Estacionamiento ITESO, por favor inicia sesión.',
+                  textAlign: TextAlign.center,
+                )
+              : const Text(
+                  'Crea una cuenta para acceder al Estacionamiento ITESO.',
+                  textAlign: TextAlign.center,
+                ),
+        );
+      },
+      footerBuilder: (context, action) {
+        return const Padding(
+          padding: EdgeInsets.only(top: 16),
+          child: Text(
+            'Al continuar, aceptas nuestros términos y condiciones.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.grey),
+          ),
+        );
+      },
+      actions: [
+        // 1) Usuario ya autenticado (login normal o Google)
+        AuthStateChangeAction<SignedIn>((context, state) async {
+          final user = state.user;
+          if (user == null) return;
+
+          await _handleAuthUser(
+            context,
+            user,
+            isNewUser: false,
+          );
+        }),
+
+        // 2) Usuario recién creado (registro con email/password)
+        AuthStateChangeAction<UserCreated>((context, state) async {
+          final user = state.credential.user;
+          if (user == null) return;
+
+          await _handleAuthUser(
+            context,
+            user,
+            isNewUser: true,
+          );
+        }),
+      ],
     );
   }
 }
