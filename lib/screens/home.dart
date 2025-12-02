@@ -336,13 +336,13 @@ class ZonaCard extends StatelessWidget {
               children: [
                 Icon(Icons.circle, color: Colors.lightBlue, size: 14),
                 const SizedBox(width: 6),
-                const Text("Ocupados"),
+                const Text("Disponibles"),
 
                 const SizedBox(width: 26),
 
                 Icon(Icons.circle, color: Colors.grey, size: 14),
                 const SizedBox(width: 6),
-                const Text("Disponibles"),
+                const Text("Ocupados"),
               ],
             ),
 
