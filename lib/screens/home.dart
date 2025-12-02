@@ -119,36 +119,37 @@ class Home extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     SizedBox(
-                      height: 300, // 🔼 Aumentado para que haya espacio
+                      height: 400,
                       child: PageView(
                         controller: PageController(viewportFraction: 0.88),
                         children: [
                           ZonaCard(
-                            titulo: "Zona A",
+                            titulo:
+                                "Estacionamiento externo y profesores Norte",
                             total: totalSpots,
                             ocupados: occupiedSpots,
                             disponibles: availableSpots,
                           ),
                           ZonaCard(
-                            titulo: "Zona B",
+                            titulo: "Estacionamiento controlado Norte",
                             total: totalSpots,
                             ocupados: (occupiedSpots * 0.7).toInt(),
                             disponibles: (totalSpots * 0.3).toInt(),
                           ),
                           ZonaCard(
-                            titulo: "Zona C",
+                            titulo: "Estacionamiento controlado poniente",
                             total: totalSpots,
                             ocupados: (occupiedSpots * 0.4).toInt(),
                             disponibles: (totalSpots * 0.6).toInt(),
                           ),
                           ZonaCard(
-                            titulo: "Zona D",
+                            titulo: "Estacionamiento profesores Sur",
                             total: totalSpots,
                             ocupados: (occupiedSpots * 0.55).toInt(),
                             disponibles: (totalSpots * 0.45).toInt(),
                           ),
                           ZonaCard(
-                            titulo: "Zona E",
+                            titulo: "Acceso peatonal sur",
                             total: totalSpots,
                             ocupados: (occupiedSpots * 0.25).toInt(),
                             disponibles: (totalSpots * 0.75).toInt(),
@@ -303,7 +304,6 @@ class ZonaCard extends StatelessWidget {
           children: [
             const SizedBox(height: 6),
 
-            // 🔼 Subí el título
             Text(
               titulo,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -314,7 +314,6 @@ class ZonaCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // 🔼 Subí la gráfica
             Expanded(
               child: Center(
                 child: SizedBox(
